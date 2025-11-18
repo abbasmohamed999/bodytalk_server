@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual env
+venv/
+.env/
+.venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PyCharm / VSCode
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# مخلفات أخرى محتملة
+*.sqlite3

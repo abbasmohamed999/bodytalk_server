@@ -1,0 +1,17 @@
+# render.yaml
+services:
+  - type: web
+    name: bodytalk-server
+    env: python
+
+    # لو مشروعك في مجلد فرعي غيّرها
+    rootDir: .
+
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port 10000"
+
+    plan: free
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
