@@ -1,14 +1,17 @@
 # render.yaml
+
 services:
   - type: web
     name: bodytalk-server
     env: python
 
-    # لو مشروعك في مجلد فرعي غيّرها
+    # مجلد المشروع (هنا نفس المجلد اللي فيه main.py و requirements.txt)
     rootDir: .
 
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn main:app --host 0.0.0.0 --port 10000"
+
+    # Render تضبط PORT في متغير بيئة، لذلك نستخدمه هنا
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
 
     plan: free
 
