@@ -123,6 +123,32 @@ class ApiService {
     }
   }
 
+  /// طلب إعادة تعيين كلمة المرور
+  static Future<Map<String, dynamic>?> requestPasswordReset(
+      String email) async {
+    final uri = Uri.parse('$_baseUrl/auth/forgot-password');
+    try {
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'email': email}),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        debugPrint(
+            'requestPasswordReset failed: ${response.statusCode} ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('requestPasswordReset error: $e');
+      return null;
+    }
+  }
+
   /// تسجيل الخروج – يمسح التوكن
   static Future<void> logout() async {
     await _saveToken(null);

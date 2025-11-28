@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:bodytalk_app/services/api_service.dart';
 import 'login_page.dart';
 import 'package:bodytalk_app/main.dart';
 
@@ -21,6 +22,12 @@ class _SignUpPageState extends State<SignUpPage> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _age = TextEditingController(text: '25');
+  final _height = TextEditingController(text: '170');
+  final _weight = TextEditingController(text: '70');
+  String _gender = 'male';
+  String _activityLevel = 'moderate';
+  String _goal = 'maintain';
   bool _loading = false;
 
   static const Color _bg = Color(0xFF020617);
@@ -28,26 +35,65 @@ class _SignUpPageState extends State<SignUpPage> {
   static const Color _black = Color(0xFF0B0F19);
   static const Color _orange = Color(0xFFFF9800);
 
+  /// تسجيل حساب حقيقي عبر السيرفر
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
 
-    // حالياً تسجيل محلي فقط (بدون سيرفر) مع تأخير بسيط للإحساس بالعملية
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      final response = await ApiService.registerUser({
+        'email': _email.text.trim(),
+        'password': _password.text,
+        'full_name': _name.text.trim(),
+        'gender': _gender,
+        'age': int.tryParse(_age.text) ?? 25,
+        'height_cm': double.tryParse(_height.text) ?? 170.0,
+        'weight_kg': double.tryParse(_weight.text) ?? 70.0,
+        'activity_level': _activityLevel,
+        'goal': _goal,
+      });
 
-    if (!mounted) return;
-    setState(() => _loading = false);
+      if (!mounted) return;
+      setState(() => _loading = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم إنشاء الحساب بنجاح 🎉'),
-        backgroundColor: Colors.green,
-      ),
-    );
+      if (response != null && response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Account created successfully 🎉',
+                fr: 'Compte créé avec succès 🎉',
+                ar: 'تم إنشاء الحساب بنجاح 🎉')),
+            backgroundColor: Colors.green,
+          ),
+        );
 
-    // بعد الإنشاء نرجع لصفحة تسجيل الدخول
-    Navigator.pushReplacementNamed(context, LoginPage.routeName);
+        // بعد الإنشاء نرجع لصفحة تسجيل الدخول
+        Navigator.pushReplacementNamed(context, LoginPage.routeName);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Failed to create account. Email may already be in use.',
+                fr: 'Échec de la création du compte. L\'e-mail est peut-être déjà utilisé.',
+                ar: 'فشل إنشاء الحساب. قد يكون البريد الإلكتروني مستخدمًا بالفعل.')),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(BodyTalkApp.tr(context,
+              en: 'An error occurred. Please try again.',
+              fr: 'Une erreur s\'est produite. Veuillez réessayer.',
+              ar: 'حدث خطأ. حاول مرة أخرى.')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   @override
@@ -55,6 +101,9 @@ class _SignUpPageState extends State<SignUpPage> {
     _name.dispose();
     _email.dispose();
     _password.dispose();
+    _age.dispose();
+    _height.dispose();
+    _weight.dispose();
     super.dispose();
   }
 
@@ -342,6 +391,353 @@ class _SignUpPageState extends State<SignUpPage> {
                                   ar: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
                             }
                             return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _gender,
+                                style: const TextStyle(color: Colors.white),
+                                dropdownColor: const Color(0xFF0B0F19),
+                                decoration: InputDecoration(
+                                  labelText: BodyTalkApp.tr(context,
+                                      en: 'Gender', fr: 'Genre', ar: 'الجنس'),
+                                  labelStyle: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.wc_outlined,
+                                    color: Colors.white70,
+                                  ),
+                                  filled: true,
+                                  fillColor:
+                                      Colors.white.withValues(alpha: 0.04),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.12),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(
+                                        color: _orange, width: 1.4),
+                                  ),
+                                ),
+                                items: [
+                                  DropdownMenuItem(
+                                    value: 'male',
+                                    child: Text(BodyTalkApp.tr(context,
+                                        en: 'Male', fr: 'Homme', ar: 'ذكر')),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'female',
+                                    child: Text(BodyTalkApp.tr(context,
+                                        en: 'Female', fr: 'Femme', ar: 'أنثى')),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() => _gender = value);
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _age,
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: InputDecoration(
+                                  labelText: BodyTalkApp.tr(context,
+                                      en: 'Age', fr: 'Âge', ar: 'العمر'),
+                                  labelStyle: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.calendar_today_outlined,
+                                    color: Colors.white70,
+                                  ),
+                                  filled: true,
+                                  fillColor:
+                                      Colors.white.withValues(alpha: 0.04),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.12),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(
+                                        color: _orange, width: 1.4),
+                                  ),
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return BodyTalkApp.tr(context,
+                                        en: 'Enter age',
+                                        fr: 'Entrez l\'âge',
+                                        ar: 'أدخل العمر');
+                                  }
+                                  final age = int.tryParse(v);
+                                  if (age == null || age < 13 || age > 100) {
+                                    return BodyTalkApp.tr(context,
+                                        en: 'Enter valid age (13-100)',
+                                        fr: 'Entrez un âge valide (13-100)',
+                                        ar: 'أدخل عمرًا صحيحًا (13-100)');
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _height,
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: InputDecoration(
+                                  labelText: BodyTalkApp.tr(context,
+                                      en: 'Height (cm)',
+                                      fr: 'Taille (cm)',
+                                      ar: 'الطول (سم)'),
+                                  labelStyle: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.straighten_outlined,
+                                    color: Colors.white70,
+                                  ),
+                                  filled: true,
+                                  fillColor:
+                                      Colors.white.withValues(alpha: 0.04),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.12),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(
+                                        color: _orange, width: 1.4),
+                                  ),
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return BodyTalkApp.tr(context,
+                                        en: 'Enter height',
+                                        fr: 'Entrez la taille',
+                                        ar: 'أدخل الطول');
+                                  }
+                                  final height = double.tryParse(v);
+                                  if (height == null ||
+                                      height < 100 ||
+                                      height > 250) {
+                                    return BodyTalkApp.tr(context,
+                                        en: 'Enter valid height (100-250 cm)',
+                                        fr: 'Entrez une taille valide (100-250 cm)',
+                                        ar: 'أدخل طولًا صحيحًا (100-250 سم)');
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _weight,
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: InputDecoration(
+                                  labelText: BodyTalkApp.tr(context,
+                                      en: 'Weight (kg)',
+                                      fr: 'Poids (kg)',
+                                      ar: 'الوزن (كجم)'),
+                                  labelStyle: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.monitor_weight_outlined,
+                                    color: Colors.white70,
+                                  ),
+                                  filled: true,
+                                  fillColor:
+                                      Colors.white.withValues(alpha: 0.04),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.12),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(
+                                        color: _orange, width: 1.4),
+                                  ),
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return BodyTalkApp.tr(context,
+                                        en: 'Enter weight',
+                                        fr: 'Entrez le poids',
+                                        ar: 'أدخل الوزن');
+                                  }
+                                  final weight = double.tryParse(v);
+                                  if (weight == null ||
+                                      weight < 30 ||
+                                      weight > 300) {
+                                    return BodyTalkApp.tr(context,
+                                        en: 'Enter valid weight (30-300 kg)',
+                                        fr: 'Entrez un poids valide (30-300 kg)',
+                                        ar: 'أدخل وزنًا صحيحًا (30-300 كجم)');
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _activityLevel,
+                          style: const TextStyle(color: Colors.white),
+                          dropdownColor: const Color(0xFF0B0F19),
+                          decoration: InputDecoration(
+                            labelText: BodyTalkApp.tr(context,
+                                en: 'Activity Level',
+                                fr: 'Niveau d\'activité',
+                                ar: 'مستوى النشاط'),
+                            labelStyle: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.directions_run_outlined,
+                              color: Colors.white70,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.04),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.12),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  const BorderSide(color: _orange, width: 1.4),
+                            ),
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'sedentary',
+                              child: Text(BodyTalkApp.tr(context,
+                                  en: 'Sedentary',
+                                  fr: 'Sédentaire',
+                                  ar: 'قليلاً')),
+                            ),
+                            DropdownMenuItem(
+                              value: 'light',
+                              child: Text(BodyTalkApp.tr(context,
+                                  en: 'Light Activity',
+                                  fr: 'Activité légère',
+                                  ar: 'نشاط خفيف')),
+                            ),
+                            DropdownMenuItem(
+                              value: 'moderate',
+                              child: Text(BodyTalkApp.tr(context,
+                                  en: 'Moderate Activity',
+                                  fr: 'Activité modérée',
+                                  ar: 'نشاط معتدل')),
+                            ),
+                            DropdownMenuItem(
+                              value: 'active',
+                              child: Text(BodyTalkApp.tr(context,
+                                  en: 'Active', fr: 'Actif', ar: 'نشط')),
+                            ),
+                            DropdownMenuItem(
+                              value: 'very_active',
+                              child: Text(BodyTalkApp.tr(context,
+                                  en: 'Very Active',
+                                  fr: 'Très actif',
+                                  ar: 'نشط جداً')),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _activityLevel = value);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _goal,
+                          style: const TextStyle(color: Colors.white),
+                          dropdownColor: const Color(0xFF0B0F19),
+                          decoration: InputDecoration(
+                            labelText: BodyTalkApp.tr(context,
+                                en: 'Goal', fr: 'Objectif', ar: 'الهدف'),
+                            labelStyle: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.flag_outlined,
+                              color: Colors.white70,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.04),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.12),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  const BorderSide(color: _orange, width: 1.4),
+                            ),
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'lose',
+                              child: Text(BodyTalkApp.tr(context,
+                                  en: 'Lose Weight',
+                                  fr: 'Perdre du poids',
+                                  ar: 'فقدان الوزن')),
+                            ),
+                            DropdownMenuItem(
+                              value: 'maintain',
+                              child: Text(BodyTalkApp.tr(context,
+                                  en: 'Maintain Weight',
+                                  fr: 'Maintenir le poids',
+                                  ar: 'الحفاظ على الوزن')),
+                            ),
+                            DropdownMenuItem(
+                              value: 'gain',
+                              child: Text(BodyTalkApp.tr(context,
+                                  en: 'Gain Muscle',
+                                  fr: 'Prendre du muscle',
+                                  ar: 'زيادة العضلات')),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _goal = value);
+                            }
                           },
                         ),
                         const SizedBox(height: 20),

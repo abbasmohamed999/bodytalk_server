@@ -65,7 +65,12 @@ class _LoginPageState extends State<LoginPage> {
       if (result == null ||
           (result['access_token'] == null && result['error'] != null)) {
         final msg = result?['error']?.toString() ??
-            'تعذر تسجيل الدخول. تحقق من البيانات أو من اتصال الإنترنت.';
+            BodyTalkApp.tr(
+              context,
+              en: 'Login failed. Check your credentials or internet connection.',
+              fr: 'Échec de la connexion. Vérifiez vos identifiants ou votre connexion Internet.',
+              ar: 'تعذر تسجيل الدخول. تحقق من البيانات أو من اتصال الإنترنت.',
+            );
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -89,8 +94,13 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _loading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم تسجيل الدخول بنجاح ✅'),
+        SnackBar(
+          content: Text(BodyTalkApp.tr(
+            context,
+            en: 'Login successful ✅',
+            fr: 'Connexion réussie ✅',
+            ar: 'تم تسجيل الدخول بنجاح ✅',
+          )),
           backgroundColor: Colors.green,
         ),
       );
@@ -100,8 +110,13 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('حدث خطأ غير متوقع أثناء تسجيل الدخول. حاول مرة أخرى.'),
+        SnackBar(
+          content: Text(BodyTalkApp.tr(
+            context,
+            en: 'Unexpected error occurred. Please try again.',
+            fr: 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
+            ar: 'حدث خطأ غير متوقع أثناء تسجيل الدخول. حاول مرة أخرى.',
+          )),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -124,30 +139,161 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.pushReplacementNamed(context, HomePage.routeName);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'انتهت صلاحية الجلسة. الرجاء تسجيل الدخول بالبريد وكلمة المرور.'),
+            SnackBar(
+              content: Text(BodyTalkApp.tr(
+                context,
+                en: 'Session expired. Please login with email and password.',
+                fr: 'Session expirée. Veuillez vous connecter avec e-mail et mot de passe.',
+                ar: 'انتهت صلاحية الجلسة. الرجاء تسجيل الدخول بالبريد وكلمة المرور.',
+              )),
               backgroundColor: Colors.redAccent,
             ),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'الرجاء تسجيل الدخول مرة واحدة بالبريد وكلمة المرور لتفعيل الدخول بالبصمة.'),
+          SnackBar(
+            content: Text(BodyTalkApp.tr(
+              context,
+              en: 'Please login once with email and password to enable biometric login.',
+              fr: 'Veuillez vous connecter une fois avec e-mail et mot de passe pour activer la connexion biométrique.',
+              ar: 'الرجاء تسجيل الدخول مرة واحدة بالبريد وكلمة المرور لتفعيل الدخول بالبصمة.',
+            )),
             backgroundColor: Colors.orange,
           ),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('فشل التحقق عبر Face ID / البصمة'),
+        SnackBar(
+          content: Text(BodyTalkApp.tr(
+            context,
+            en: 'Face ID / Biometric authentication failed',
+            fr: 'Échec de l\'authentification Face ID / biométrique',
+            ar: 'فشل التحقق عبر Face ID / البصمة',
+          )),
           backgroundColor: Colors.red,
         ),
       );
     }
+  }
+
+  /// Dialog for password reset
+  Future<void> _showForgotPasswordDialog() async {
+    final emailController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0B0F19),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          BodyTalkApp.tr(context,
+              en: 'Reset Password',
+              fr: 'Réinitialiser le mot de passe',
+              ar: 'إعادة تعيين كلمة المرور'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              BodyTalkApp.tr(context,
+                  en: 'Enter your email address and we will send you a password reset link.',
+                  fr: 'Entrez votre adresse e-mail et nous vous enverrons un lien de réinitialisation.',
+                  ar: 'أدخل عنوان بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور.'),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: BodyTalkApp.tr(context,
+                    en: 'Email', fr: 'E-mail', ar: 'البريد الإلكتروني'),
+                labelStyle:
+                    TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                prefixIcon:
+                    const Icon(Icons.email_outlined, color: Colors.white70),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.04),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: _orange, width: 1.4),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              BodyTalkApp.tr(context, en: 'Cancel', fr: 'Annuler', ar: 'إلغاء'),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = emailController.text.trim();
+              if (email.isEmpty || !email.contains('@')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(BodyTalkApp.tr(context,
+                        en: 'Please enter a valid email address',
+                        fr: 'Veuillez entrer une adresse e-mail valide',
+                        ar: 'الرجاء إدخال عنوان بريد إلكتروني صالح')),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+                return;
+              }
+
+              // Call password reset API
+              final result = await ApiService.requestPasswordReset(email);
+
+              Navigator.pop(ctx);
+
+              if (!mounted) return;
+
+              if (result != null && result['success'] == true) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(BodyTalkApp.tr(context,
+                        en: 'Password reset link sent to your email ✅',
+                        fr: 'Lien de réinitialisation envoyé à votre e-mail ✅',
+                        ar: 'تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني ✅')),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(BodyTalkApp.tr(context,
+                        en: 'Failed to send reset link. Please try again.',
+                        fr: 'Échec de l\'envoi du lien. Veuillez réessayer.',
+                        ar: 'فشل إرسال رابط إعادة التعيين. حاول مرة أخرى.')),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _orange,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(BodyTalkApp.tr(context,
+                en: 'Send', fr: 'Envoyer', ar: 'إرسال')),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -411,7 +557,10 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           validator: (v) {
                             if (v == null || v.length < 6) {
-                              return 'كلمة المرور قصيرة جدًا';
+                              return BodyTalkApp.tr(context,
+                                  en: 'Password is too short',
+                                  fr: 'Le mot de passe est trop court',
+                                  ar: 'كلمة المرور قصيرة جدًا');
                             }
                             return null;
                           },
@@ -430,16 +579,22 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             Text(
-                              'تذكرني',
+                              BodyTalkApp.tr(context,
+                                  en: 'Remember me',
+                                  fr: 'Se souvenir de moi',
+                                  ar: 'تذكرني'),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.9),
                               ),
                             ),
                             const Spacer(),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: _showForgotPasswordDialog,
                               child: Text(
-                                'نسيت كلمة المرور؟',
+                                BodyTalkApp.tr(context,
+                                    en: 'Forgot password?',
+                                    fr: 'Mot de passe oublié ?',
+                                    ar: 'نسيت كلمة المرور؟'),
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.7),
                                   fontSize: 13,
@@ -463,8 +618,14 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             child: Text(
                               _loading
-                                  ? 'جارٍ تسجيل الدخول...'
-                                  : 'تسجيل الدخول',
+                                  ? BodyTalkApp.tr(context,
+                                      en: 'Logging in...',
+                                      fr: 'Connexion en cours...',
+                                      ar: 'جارٍ تسجيل الدخول...')
+                                  : BodyTalkApp.tr(context,
+                                      en: 'Login',
+                                      fr: 'Se connecter',
+                                      ar: 'تسجيل الدخول'),
                               style: const TextStyle(fontSize: 15),
                             ),
                           ),
@@ -474,9 +635,12 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             icon: const Icon(Icons.face_retouching_natural),
-                            label: const Text(
-                              'تسجيل الدخول عبر Face ID / البصمة',
-                              style: TextStyle(fontSize: 14),
+                            label: Text(
+                              BodyTalkApp.tr(context,
+                                  en: 'Login with Face ID / Biometric',
+                                  fr: 'Connexion avec Face ID / biométrie',
+                                  ar: 'تسجيل الدخول عبر Face ID / البصمة'),
+                              style: const TextStyle(fontSize: 14),
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
@@ -505,23 +669,30 @@ class _LoginPageState extends State<LoginPage> {
                       MaterialPageRoute(builder: (_) => const SignUpPage()),
                     );
                   },
-                  child: const Text(
-                    'ليس لديك حساب؟ أنشئ حساب جديد',
-                    style: TextStyle(
+                  child: Text(
+                    BodyTalkApp.tr(context,
+                        en: 'Don\'t have an account? Sign up',
+                        fr: 'Pas de compte ? Inscrivez-vous',
+                        ar: 'ليس لديك حساب؟ أنشئ حساب جديد'),
+                    style: const TextStyle(
                       color: _orange,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.lock_outline, size: 16, color: Colors.grey),
-                    SizedBox(width: 6),
+                    const Icon(Icons.lock_outline,
+                        size: 16, color: Colors.grey),
+                    const SizedBox(width: 6),
                     Text(
-                      'بياناتك آمنة تمامًا 🔒',
-                      style: TextStyle(color: Colors.grey),
+                      BodyTalkApp.tr(context,
+                          en: 'Your data is completely secure 🔒',
+                          fr: 'Vos données sont entièrement sécurisées 🔒',
+                          ar: 'بياناتك آمنة تمامًا 🔒'),
+                      style: const TextStyle(color: Colors.grey),
                     ),
                   ],
                 ),
