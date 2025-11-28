@@ -39,11 +39,14 @@ __pycache__/
 env/
 venv/
 ENV/
+.env/
+.venv/
 *.egg-info/
 dist/
 bodytalk.db
 bodytalk.db-shm
 bodytalk.db-wal
+*.sqlite3
 
 # IDE
 .vscode/
@@ -55,3 +58,6 @@ bodytalk.db-wal
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
