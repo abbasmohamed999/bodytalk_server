@@ -72,8 +72,7 @@ class _SplashScreenState extends State<SplashScreen>
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setString('app_language', 'en');
                     if (!ctx.mounted) return;
-                    BodyTalkApp.setLocaleStatic(context, 'en');
-                    if (!ctx.mounted) return;
+                    BodyTalkApp.setLocaleStatic(ctx, 'en');
                     Navigator.pop(ctx);
                   },
                 ),
@@ -84,8 +83,7 @@ class _SplashScreenState extends State<SplashScreen>
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setString('app_language', 'fr');
                     if (!ctx.mounted) return;
-                    BodyTalkApp.setLocaleStatic(context, 'fr');
-                    if (!ctx.mounted) return;
+                    BodyTalkApp.setLocaleStatic(ctx, 'fr');
                     Navigator.pop(ctx);
                   },
                 ),
@@ -96,8 +94,7 @@ class _SplashScreenState extends State<SplashScreen>
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setString('app_language', 'ar');
                     if (!ctx.mounted) return;
-                    BodyTalkApp.setLocaleStatic(context, 'ar');
-                    if (!ctx.mounted) return;
+                    BodyTalkApp.setLocaleStatic(ctx, 'ar');
                     Navigator.pop(ctx);
                   },
                 ),
