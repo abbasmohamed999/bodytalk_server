@@ -56,7 +56,7 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
   Future<void> _submit() async {
     if (_submitting) return;
 
-    if (!_formKey.currentState!.validate()) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
@@ -204,11 +204,11 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Colors.black54,
             blurRadius: 20,
-            offset: const Offset(0, 14),
+            offset: Offset(0, 14),
           ),
         ],
       ),
@@ -468,7 +468,7 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
         labelStyle:
             TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
         hintText: hint != null
-            ? BodyTalkApp.tr(context, en: hint!, fr: hint!, ar: hint!)
+            ? BodyTalkApp.tr(context, en: hint, fr: hint, ar: hint)
             : null,
         hintStyle:
             TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
@@ -499,7 +499,7 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
     required void Function(T?) onChanged,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       dropdownColor: _bg,
       iconEnabledColor: Colors.white70,
       style: const TextStyle(color: Colors.white),

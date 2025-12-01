@@ -143,7 +143,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     fr: 'Sélectionnez le genre',
                     ar: 'اختر الجنس',
                   ),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -207,7 +207,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     fr: "Sélectionnez la langue de l'application",
                     ar: 'اختر لغة التطبيق',
                   ),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -250,7 +250,8 @@ class _ProfilePageState extends State<ProfilePage> {
               : 'en';
       await prefs.setString('app_language', code);
       // تطبيق اللغة فوراً بدون إعادة تشغيل
-      BodyTalkApp.of(context)?.setLocale(code);
+      if (!mounted) return;
+      BodyTalkApp.setLocaleStatic(context, code);
       _showSoonSnack('Language changed.');
     }
   }

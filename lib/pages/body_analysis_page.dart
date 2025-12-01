@@ -9,7 +9,6 @@ import 'package:google_fonts/google_fonts.dart';
 // ✅ نستخدم ApiService الجديد بدل BodyTalkApiService
 import 'package:bodytalk_app/services/api_service.dart';
 import 'package:bodytalk_app/main.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class BodyAnalysisPage extends StatefulWidget {
   final File imageFile;

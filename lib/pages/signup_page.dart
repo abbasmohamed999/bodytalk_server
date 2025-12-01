@@ -398,7 +398,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           children: [
                             Expanded(
                               child: DropdownButtonFormField<String>(
-                                value: _gender,
+                                initialValue: _gender,
                                 style: const TextStyle(color: Colors.white),
                                 dropdownColor: const Color(0xFF0B0F19),
                                 decoration: InputDecoration(
@@ -612,7 +612,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          value: _activityLevel,
+                          initialValue: _activityLevel,
                           style: const TextStyle(color: Colors.white),
                           dropdownColor: const Color(0xFF0B0F19),
                           decoration: InputDecoration(
@@ -684,7 +684,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          value: _goal,
+                          initialValue: _goal,
                           style: const TextStyle(color: Colors.white),
                           dropdownColor: const Color(0xFF0B0F19),
                           decoration: InputDecoration(

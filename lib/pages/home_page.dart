@@ -270,7 +270,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   fr: 'BodyTalk AI',
                   ar: 'BodyTalk AI',
                 ),
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -382,7 +382,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     fr: 'Aucune image pour l’instant',
                     ar: 'لا توجد صورة حتى الآن',
                   ),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xFFE5E7EB),
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

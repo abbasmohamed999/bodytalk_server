@@ -31,12 +31,19 @@ class BodyTalkApp extends StatefulWidget {
   const BodyTalkApp({super.key, required this.localeCode});
   final String localeCode;
 
-  static _BodyTalkAppState? of(BuildContext context) =>
-      context.findAncestorStateOfType<_BodyTalkAppState>();
+  static String? _getLocaleCode(BuildContext context) {
+    final state = context.findAncestorStateOfType<_BodyTalkAppState>();
+    return state?._localeCode;
+  }
+
+  static void setLocaleStatic(BuildContext context, String code) {
+    final state = context.findAncestorStateOfType<_BodyTalkAppState>();
+    state?.setLocale(code);
+  }
 
   static String tr(BuildContext context,
       {required String en, required String fr, required String ar}) {
-    final code = of(context)?.localeCode ?? 'en';
+    final code = _getLocaleCode(context) ?? 'en';
     return code == 'ar' ? ar : (code == 'fr' ? fr : en);
   }
 

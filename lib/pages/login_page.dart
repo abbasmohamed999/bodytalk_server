@@ -93,6 +93,7 @@ class _LoginPageState extends State<LoginPage> {
 
       setState(() => _loading = false);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(BodyTalkApp.tr(
@@ -105,6 +106,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
 
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, HomePage.routeName);
     } catch (e) {
       if (!mounted) return;
@@ -135,6 +137,7 @@ class _LoginPageState extends State<LoginPage> {
       // تحقق من وجود توكن صالح قبل الدخول
       if (ApiService.token != null) {
         final me = await ApiService.getAuthMe();
+        if (!mounted) return;
         if (me != null) {
           Navigator.pushReplacementNamed(context, HomePage.routeName);
         } else {
@@ -258,6 +261,7 @@ class _LoginPageState extends State<LoginPage> {
               // Call password reset API
               final result = await ApiService.requestPasswordReset(email);
 
+              if (!ctx.mounted) return;
               Navigator.pop(ctx);
 
               if (!mounted) return;
