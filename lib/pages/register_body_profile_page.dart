@@ -15,7 +15,7 @@ class RegisterBodyProfilePage extends StatefulWidget {
   @override
   State<RegisterBodyProfilePage> createState() =>
       _RegisterBodyProfilePageState();
-}
+Colors.white.withValues(alpha: 0.8)
 
 class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
   // ألوان قريبة من تصميم التطبيق
@@ -48,7 +48,7 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
     _heightController.dispose();
     _weightController.dispose();
     super.dispose();
-  }
+  Colors.white.withValues(alpha: 0.8)
 
   // =======================
   // دالة الإرسال بعد التعديل
@@ -58,7 +58,7 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
 
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
-    }
+    Colors.white.withValues(alpha: 0.8)
 
     setState(() => _submitting = true);
 
@@ -75,7 +75,7 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
       "weight_kg": double.tryParse(_weightController.text),
       "activity_level": _activityLevel,
       "goal": _goal,
-    };
+    Colors.white.withValues(alpha: 0.8)
 
     // 1) تسجيل المستخدم في السيرفر
     final response = await ApiService.registerUser(data);
@@ -86,7 +86,7 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
     if (response == null) {
       _showSnack('تعذر الاتصال بالسيرفر، تأكد أنه يعمل.');
       return;
-    }
+    Colors.white.withValues(alpha: 0.8)
 
     if (response.statusCode == 200) {
       _showSnack('تم إنشاء الحساب بنجاح ✅');
@@ -95,12 +95,12 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
       final loginResult = await ApiService.login(
         email: email,
         password: password,
-      );
+      Colors.white.withValues(alpha: 0.8)
 
       if (loginResult == null) {
         _showSnack('تم إنشاء الحساب لكن فشل تسجيل الدخول تلقائيًا.');
         return;
-      }
+      Colors.white.withValues(alpha: 0.8)
 
       // 3) الانتقال للصفحة الرئيسية
       if (!mounted) return;
@@ -109,8 +109,8 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
       _showSnack('البريد الإلكتروني مستخدم بالفعل أو بيانات غير صحيحة.');
     } else {
       _showSnack('حدث خطأ غير متوقع: ${response.statusCode}');
-    }
-  }
+    Colors.white.withValues(alpha: 0.8)
+  Colors.white.withValues(alpha: 0.8)
 
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -118,11 +118,11 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
         content: Text(
           msg,
           textAlign: TextAlign.center,
-        ),
+        Colors.white.withValues(alpha: 0.8)
         backgroundColor: Colors.black87,
-      ),
-    );
-  }
+      Colors.white.withValues(alpha: 0.8)
+    Colors.white.withValues(alpha: 0.8)
+  Colors.white.withValues(alpha: 0.8)
 
   @override
   Widget build(BuildContext context) {
@@ -139,10 +139,10 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
               en: 'Create account and body info',
               fr: 'Créer un compte et les informations corporelles',
               ar: 'إنشاء حساب ومعلومات الجسم',
-            ),
+            Colors.white.withValues(alpha: 0.8)
             style: const TextStyle(fontSize: 16),
-          ),
-        ),
+          Colors.white.withValues(alpha: 0.8)
+        Colors.white.withValues(alpha: 0.8)
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
@@ -166,8 +166,8 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                             vertical: 14, horizontal: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
+                        Colors.white.withValues(alpha: 0.8)
+                      Colors.white.withValues(alpha: 0.8)
                       onPressed: _submitting ? null : _submit,
                       child: _submitting
                           ? const SizedBox(
@@ -176,22 +176,22 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.2,
                                 color: Colors.white,
-                              ),
+                              Colors.white.withValues(alpha: 0.8)
                             )
                           : Text(BodyTalkApp.tr(context,
                               en: 'Create account and start',
                               fr: 'Créer le compte et commencer',
                               ar: 'إنشاء الحساب والبدء')),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+                    Colors.white.withValues(alpha: 0.8)
+                  Colors.white.withValues(alpha: 0.8)
+                Colors.white.withValues(alpha: 0.8)
+              Colors.white.withValues(alpha: 0.8)
+            Colors.white.withValues(alpha: 0.8)
+          Colors.white.withValues(alpha: 0.8)
+        Colors.white.withValues(alpha: 0.8)
+      Colors.white.withValues(alpha: 0.8)
+    Colors.white.withValues(alpha: 0.8)
+  Colors.white.withValues(alpha: 0.8)
 
   Widget _buildHeaderCard() {
     return Container(
@@ -203,15 +203,15 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
           colors: [_blue, _orange],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-        ),
+        Colors.white.withValues(alpha: 0.8)
         boxShadow: const [
           BoxShadow(
             color: Colors.black54,
             blurRadius: 20,
             offset: Offset(0, 14),
-          ),
-        ],
-      ),
+          Colors.white.withValues(alpha: 0.8)
+        Colors.white.withValues(alpha: 0.8)
+      Colors.white.withValues(alpha: 0.8)
       child: Row(
         children: [
           Container(
@@ -220,13 +220,13 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white24,
-            ),
+            Colors.white.withValues(alpha: 0.8)
             child: const Icon(
               Icons.person_add_alt_1,
               color: Colors.white,
               size: 22,
-            ),
-          ),
+            Colors.white.withValues(alpha: 0.8)
+          Colors.white.withValues(alpha: 0.8)
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -235,28 +235,28 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                 en: 'We need some basic info to personalize analysis and tips 🎯',
                 fr: "Nous avons besoin de quelques informations de base pour personnaliser l'analyse et les conseils 🎯",
                 ar: 'نحتاج بعض المعلومات البسيطة\nلنخصص لك التحليل والنصائح 🎯',
-              ),
+              Colors.white.withValues(alpha: 0.8)
               style: GoogleFonts.tajawal(
                 color: Colors.white,
                 fontSize: 13,
                 height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+              Colors.white.withValues(alpha: 0.8)
+            Colors.white.withValues(alpha: 0.8)
+          Colors.white.withValues(alpha: 0.8)
+        Colors.white.withValues(alpha: 0.8)
+      Colors.white.withValues(alpha: 0.8)
+    Colors.white.withValues(alpha: 0.8)
+  Colors.white.withValues(alpha: 0.8)
 
   Widget _buildAccountSection() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      Colors.white.withValues(alpha: 0.8)
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -269,8 +269,8 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
               color: Colors.white,
               fontSize: 15,
               fontWeight: FontWeight.w700,
-            ),
-          ),
+            Colors.white.withValues(alpha: 0.8)
+          Colors.white.withValues(alpha: 0.8)
           const SizedBox(height: 10),
           _textField(
             controller: _nameController,
@@ -280,7 +280,7 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                 fr: 'ex. Ahmed Mohamed',
                 ar: 'مثال: أحمد محمد'),
             keyboardType: TextInputType.name,
-          ),
+          Colors.white.withValues(alpha: 0.8)
           const SizedBox(height: 10),
           _textField(
             controller: _emailController,
@@ -294,16 +294,16 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                     en: 'This field is required',
                     fr: 'Ce champ est requis',
                     ar: 'هذا الحقل مطلوب');
-              }
+              Colors.white.withValues(alpha: 0.8)
               if (!v.contains('@')) {
                 return BodyTalkApp.tr(context,
                     en: 'Invalid email',
                     fr: 'E-mail invalide',
                     ar: 'بريد غير صالح');
-              }
+              Colors.white.withValues(alpha: 0.8)
               return null;
-            },
-          ),
+            Colors.white.withValues(alpha: 0.8)
+          Colors.white.withValues(alpha: 0.8)
           const SizedBox(height: 10),
           _textField(
             controller: _passwordController,
@@ -320,24 +320,24 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                     en: 'Minimum 6 characters',
                     fr: 'Minimum 6 caractères',
                     ar: 'الحد الأدنى ٦ أحرف');
-              }
+              Colors.white.withValues(alpha: 0.8)
               return null;
-            },
-          ),
-        ],
-      ),
-    );
-  }
+            Colors.white.withValues(alpha: 0.8)
+          Colors.white.withValues(alpha: 0.8)
+        Colors.white.withValues(alpha: 0.8)
+      Colors.white.withValues(alpha: 0.8)
+    Colors.white.withValues(alpha: 0.8)
+  Colors.white.withValues(alpha: 0.8)
 
   Widget _buildBodySection() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      Colors.white.withValues(alpha: 0.8)
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -350,8 +350,8 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
               color: Colors.white,
               fontSize: 15,
               fontWeight: FontWeight.w700,
-            ),
-          ),
+            Colors.white.withValues(alpha: 0.8)
+          Colors.white.withValues(alpha: 0.8)
           const SizedBox(height: 10),
           Row(
             children: [
@@ -364,10 +364,10 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                     'ذكر',
                     'أنثى',
                     'غير محدد',
-                  ],
+                  Colors.white.withValues(alpha: 0.8)
                   onChanged: (v) => setState(() => _gender = v),
-                ),
-              ),
+                Colors.white.withValues(alpha: 0.8)
+              Colors.white.withValues(alpha: 0.8)
               const SizedBox(width: 8),
               Expanded(
                 child: _textField(
@@ -377,10 +377,10 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                   hint: BodyTalkApp.tr(context,
                       en: 'in years', fr: 'en années', ar: 'بالسنوات'),
                   keyboardType: TextInputType.number,
-                ),
-              ),
-            ],
-          ),
+                Colors.white.withValues(alpha: 0.8)
+              Colors.white.withValues(alpha: 0.8)
+            Colors.white.withValues(alpha: 0.8)
+          Colors.white.withValues(alpha: 0.8)
           const SizedBox(height: 10),
           Row(
             children: [
@@ -393,8 +393,8 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                       en: 'e.g. 175', fr: 'ex. 175', ar: 'مثال: 175'),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                ),
-              ),
+                Colors.white.withValues(alpha: 0.8)
+              Colors.white.withValues(alpha: 0.8)
               const SizedBox(width: 8),
               Expanded(
                 child: _textField(
@@ -405,10 +405,10 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                       en: 'e.g. 72', fr: 'ex. 72', ar: 'مثال: 72'),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                ),
-              ),
-            ],
-          ),
+                Colors.white.withValues(alpha: 0.8)
+              Colors.white.withValues(alpha: 0.8)
+            Colors.white.withValues(alpha: 0.8)
+          Colors.white.withValues(alpha: 0.8)
           const SizedBox(height: 10),
           _dropdown<String>(
             value: _activityLevel,
@@ -420,9 +420,9 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
               'منخفض',
               'متوسط',
               'مرتفع',
-            ],
+            Colors.white.withValues(alpha: 0.8)
             onChanged: (v) => setState(() => _activityLevel = v),
-          ),
+          Colors.white.withValues(alpha: 0.8)
           const SizedBox(height: 10),
           _dropdown<String>(
             value: _goal,
@@ -432,13 +432,13 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
               'فقدان وزن',
               'ثبات وزن',
               'زيادة عضل',
-            ],
+            Colors.white.withValues(alpha: 0.8)
             onChanged: (v) => setState(() => _goal = v),
-          ),
-        ],
-      ),
-    );
-  }
+          Colors.white.withValues(alpha: 0.8)
+        Colors.white.withValues(alpha: 0.8)
+      Colors.white.withValues(alpha: 0.8)
+    Colors.white.withValues(alpha: 0.8)
+  Colors.white.withValues(alpha: 0.8)
 
   Widget _textField({
     required TextEditingController controller,
@@ -460,37 +460,37 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
                   en: 'This field is required',
                   fr: 'Ce champ est requis',
                   ar: 'هذا الحقل مطلوب');
-            }
+            Colors.white.withValues(alpha: 0.8)
             return null;
-          },
+          Colors.white.withValues(alpha: 0.8)
       decoration: InputDecoration(
         labelText: label,
         labelStyle:
-            TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+            TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
         hintText: hint != null
             ? BodyTalkApp.tr(context, en: hint, fr: hint, ar: hint)
             : null,
         hintStyle:
-            TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+            TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.03),
+        fillColor: Colors.white.withValues(alpha: 0.03),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
-        ),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+        Colors.white.withValues(alpha: 0.8)
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
-        ),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+        Colors.white.withValues(alpha: 0.8)
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: _orange, width: 1.4),
-        ),
+        Colors.white.withValues(alpha: 0.8)
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      ),
-    );
-  }
+      Colors.white.withValues(alpha: 0.8)
+    Colors.white.withValues(alpha: 0.8)
+  Colors.white.withValues(alpha: 0.8)
 
   Widget _dropdown<T>({
     required T? value,
@@ -506,24 +506,24 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle:
-            TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+            TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.03),
+        fillColor: Colors.white.withValues(alpha: 0.03),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
-        ),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+        Colors.white.withValues(alpha: 0.8)
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
-        ),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+        Colors.white.withValues(alpha: 0.8)
         focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(14)),
           borderSide: BorderSide(color: _orange, width: 1.4),
-        ),
+        Colors.white.withValues(alpha: 0.8)
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      ),
+      Colors.white.withValues(alpha: 0.8)
       items: items
           .map(
             (e) => DropdownMenuItem<T>(
@@ -531,11 +531,11 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
               child: Text(
                 e.toString(),
                 style: const TextStyle(color: Colors.white),
-              ),
-            ),
+              Colors.white.withValues(alpha: 0.8)
+            Colors.white.withValues(alpha: 0.8)
           )
           .toList(),
       onChanged: onChanged,
-    );
-  }
-}
+    Colors.white.withValues(alpha: 0.8)
+  Colors.white.withValues(alpha: 0.8)
+Colors.white.withValues(alpha: 0.8)
