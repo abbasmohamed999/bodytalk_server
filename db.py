@@ -17,6 +17,10 @@ DATABASE_URL = os.getenv(
     "postgresql+asyncpg://bodytalk_user:Abbas%40999@localhost:5432/bodytalk_db",
 )
 
+# تحويل postgresql:// إلى postgresql+asyncpg:// (من أجل Render)
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 
 
 engine = create_async_engine(
