@@ -8,7 +8,7 @@ import 'package:bodytalk_app/main.dart';
 
 import '../services/face_auth_service.dart';
 import '../services/api_service.dart';
-import 'home_page.dart';
+import 'main_navigation.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -107,7 +107,10 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, HomePage.routeName);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigation()),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -139,7 +142,10 @@ class _LoginPageState extends State<LoginPage> {
         final me = await ApiService.getAuthMe();
         if (!mounted) return;
         if (me != null) {
-          Navigator.pushReplacementNamed(context, HomePage.routeName);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

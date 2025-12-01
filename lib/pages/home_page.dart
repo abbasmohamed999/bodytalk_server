@@ -23,6 +23,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   File? _image;
   bool _loading = false;
   bool _isPicking = false;
+  Map<String, dynamic>? _userProfile;
 
   // 📸 اختيار صورة الجسم
   Future<void> _pickImage() async {
@@ -42,6 +43,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       debugPrint("❌ خطأ في اختيار الصورة: $e");
     } finally {
       _isPicking = false;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final profile = await ApiService.getProfile();
+    if (mounted && profile != null) {
+      setState(() => _userProfile = profile);
     }
   }
 
@@ -292,49 +306,41 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ],
           ),
           const Spacer(),
-          Row(
-            children: [
-              InkWell(
-                onTap: _showHistory,
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.history,
+          // User Avatar instead of Settings
+          InkWell(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            ),
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  width: 2,
+                ),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  _userProfile?['name']
+                          ?.toString()
+                          .substring(0, 1)
+                          .toUpperCase() ??
+                      'U',
+                  style: const TextStyle(
                     color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfilePage()),
-                ),
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.settings_outlined,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
