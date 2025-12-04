@@ -144,6 +144,64 @@ async def login_for_access_token(
     return Token(access_token=access_token)
 
 
+@app.post("/auth/social-login", response_model=Token)
+async def social_login(
+    payload: dict,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Social login endpoint for Google/Apple Sign-In
+    Creates user if doesn't exist, returns access token
+    """
+    provider = payload.get('provider')  # 'google' or 'apple'
+    email = payload.get('email')
+    name = payload.get('name', '')
+    photo_url = payload.get('photo_url')
+    user_id = payload.get('user_id')  # For Apple
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is required for social login.",
+        )
+
+    # Check if user exists
+    user = await get_user_by_email(email, session)
+
+    if not user:
+        # Create new user with social login
+        # Generate a random secure password (user won't need it for social login)
+        import secrets
+        random_password = secrets.token_urlsafe(32)
+        hashed_password = get_password_hash(random_password)
+
+        user = User(
+            email=email,
+            hashed_password=hashed_password,
+            full_name=name or email.split('@')[0],
+            # Set defaults for required fields
+            gender=None,
+            age=None,
+            height_cm=None,
+            weight_kg=None,
+            activity_level=None,
+            goal=None,
+        )
+
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+
+    # Generate access token
+    access_token_expires = timedelta(minutes=60 * 24 * 7)
+    access_token = create_access_token(
+        data={"sub": str(user.id)},
+        expires_delta=access_token_expires,
+    )
+
+    return Token(access_token=access_token)
+
+
 @app.get("/auth/me", response_model=UserRead)
 async def read_current_user_auth(current_user: User = Depends(get_current_user)):
     return current_user
