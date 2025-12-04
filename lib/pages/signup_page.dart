@@ -153,30 +153,37 @@ class _SignUpPageState extends State<SignUpPage> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        BodyTalkApp.tr(
-                          context,
-                          en: 'BodyTalk AI',
-                          fr: 'BodyTalk AI',
-                          ar: 'BodyTalk AI',
-                        ),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          BodyTalkApp.tr(
+                            context,
+                            en: 'BodyTalk AI',
+                            fr: 'BodyTalk AI',
+                            ar: 'BodyTalk AI',
+                          ),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
                         ),
                       ),
-                      const Spacer(),
-                      Text(
-                        BodyTalkApp.tr(
-                          context,
-                          en: 'Create a new account',
-                          fr: 'Créer un nouveau compte',
-                          ar: 'إنشاء حساب جديد',
-                        ),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 13,
+                      Expanded(
+                        flex: 4,
+                        child: Text(
+                          BodyTalkApp.tr(
+                            context,
+                            en: 'New account',
+                            fr: 'Nouveau compte',
+                            ar: 'حساب جديد',
+                          ),
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -228,17 +235,22 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 6),
                 Center(
-                  child: Text(
-                    BodyTalkApp.tr(
-                      context,
-                      en: 'Enter your info to start analyzing your body and meals.',
-                      fr: 'Entrez vos informations pour commencer l’analyse de votre corps et de vos repas.',
-                      ar: 'سجّل معلوماتك للبدء في تحليل جسمك ووجباتك.',
-                    ),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 13,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      BodyTalkApp.tr(
+                        context,
+                        en: 'Enter your info to start analyzing your body and meals.',
+                        fr: 'Entrez vos infos pour analyser votre corps.',
+                        ar: 'سجّل معلوماتك للبدء في تحليل جسمك ووجباتك.',
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 12.5,
+                      ),
                     ),
                   ),
                 ),
@@ -398,22 +410,28 @@ class _SignUpPageState extends State<SignUpPage> {
                           children: [
                             Expanded(
                               child: DropdownButtonFormField<String>(
+                                isExpanded: true,
                                 initialValue: _gender,
-                                style: const TextStyle(color: Colors.white),
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 14),
                                 dropdownColor: const Color(0xFF0B0F19),
                                 decoration: InputDecoration(
                                   labelText: BodyTalkApp.tr(context,
                                       en: 'Gender', fr: 'Genre', ar: 'الجنس'),
                                   labelStyle: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: 13,
                                   ),
                                   prefixIcon: const Icon(
                                     Icons.wc_outlined,
                                     color: Colors.white70,
+                                    size: 20,
                                   ),
                                   filled: true,
                                   fillColor:
                                       Colors.white.withValues(alpha: 0.04),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 14),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
                                     borderSide: BorderSide(

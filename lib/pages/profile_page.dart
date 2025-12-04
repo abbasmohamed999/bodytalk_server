@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bodytalk_app/pages/login_page.dart';
 import 'package:bodytalk_app/services/api_service.dart';
+import 'package:bodytalk_app/services/face_auth_service.dart';
 import 'package:bodytalk_app/main.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -23,21 +24,54 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _notifEnabled = true;
   bool _darkMode = true;
   bool _autoSyncPlan = false;
+  bool _biometricEnabled = false;
   String _language = 'العربية';
   String _gender = 'غير محدد';
   int? _age;
+
+  // Subscription status
+  bool _loadingSubscription = true;
+  String _subscriptionStatus = 'free';
+  String? _subscriptionType;
+  DateTime? _subscriptionExpiry;
 
   @override
   void initState() {
     super.initState();
     _loadPrefs();
+    _loadSubscriptionStatus();
   }
 
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _autoSyncPlan = prefs.getBool('auto_sync_plan') ?? false;
+      _biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
     });
+  }
+
+  Future<void> _loadSubscriptionStatus() async {
+    setState(() => _loadingSubscription = true);
+    try {
+      final data = await ApiService.getSubscriptionStatus();
+      if (!mounted) return;
+      if (data != null) {
+        setState(() {
+          _subscriptionStatus = data['status'] ?? 'free';
+          _subscriptionType = data['subscription_type'];
+          if (data['expiry_date'] != null) {
+            _subscriptionExpiry = DateTime.tryParse(data['expiry_date']);
+          }
+          _loadingSubscription = false;
+        });
+      } else {
+        setState(() => _loadingSubscription = false);
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to load subscription: $e');
+      if (!mounted) return;
+      setState(() => _loadingSubscription = false);
+    }
   }
 
   // ======================
@@ -412,9 +446,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 color: Colors.white, size: 18),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
-            'الملف الشخصي والإعدادات',
-            style: TextStyle(color: Colors.white, fontSize: 16),
+          title: Text(
+            BodyTalkApp.tr(context,
+                en: 'Profile & Settings',
+                fr: 'Profil et paramètres',
+                ar: 'الملف الشخصي والإعدادات'),
+            style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
           centerTitle: false,
         ),
@@ -456,10 +493,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             color: Colors.white, size: 22),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'حسابك في BodyTalk AI',
-                          style: TextStyle(
+                          BodyTalkApp.tr(context,
+                              en: 'Your BodyTalk AI account',
+                              fr: 'Votre compte BodyTalk AI',
+                              ar: 'حسابك في BodyTalk AI'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -467,7 +507,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       Text(
-                        'إصدار تجريبي',
+                        BodyTalkApp.tr(context,
+                            en: 'Beta', fr: 'Bêta', ar: 'إصدار تجريبي'),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 11,
@@ -484,7 +525,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 // 🧍‍♂️ المعلومات الشخصية
                 _sectionCard(
                   icon: Icons.badge_outlined,
-                  title: 'المعلومات الشخصية',
+                  title: BodyTalkApp.tr(context,
+                      en: 'Personal information',
+                      fr: 'Informations personnelles',
+                      ar: 'المعلومات الشخصية'),
                   child: Column(
                     children: [
                       ListTile(
@@ -617,7 +661,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 // 🔐 إدارة الحساب
                 _sectionCard(
                   icon: Icons.manage_accounts_outlined,
-                  title: 'إدارة الحساب',
+                  title: BodyTalkApp.tr(context,
+                      en: 'Account management',
+                      fr: 'Gestion du compte',
+                      ar: 'إدارة الحساب'),
                   child: Column(
                     children: [
                       ListTile(
@@ -723,7 +770,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 // ⚙️ إعدادات التطبيق
                 _sectionCard(
                   icon: Icons.settings_suggest_outlined,
-                  title: 'إعدادات التطبيق',
+                  title: BodyTalkApp.tr(context,
+                      en: 'App settings',
+                      fr: "Paramètres de l'application",
+                      ar: 'إعدادات التطبيق'),
                   child: Column(
                     children: [
                       SwitchListTile(
@@ -794,12 +844,19 @@ class _ProfilePageState extends State<ProfilePage> {
                         inactiveThumbColor: Colors.grey.shade500,
                         inactiveTrackColor:
                             Colors.white.withValues(alpha: 0.12),
-                        title: const Text(
-                          'مزامنة الخطط تلقائيًا',
-                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        title: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Auto-sync plans',
+                              fr: 'Synchroniser automatiquement les plans',
+                              ar: 'مزامنة الخطط تلقائيًا'),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14),
                         ),
                         subtitle: Text(
-                          'عند التفعيل: تُربط خطة الوجبات بخطة التمارين تلقائيًا.',
+                          BodyTalkApp.tr(context,
+                              en: 'When enabled: meal plan and workout plan sync automatically.',
+                              fr: "Lorsqu'activé : plan de repas et plan d'entraînement se synchronisent automatiquement.",
+                              ar: 'عند التفعيل: تُربط خطة الوجبات بخطة التمارين تلقائيًا.'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
@@ -811,8 +868,103 @@ class _ProfilePageState extends State<ProfilePage> {
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool('auto_sync_plan', v);
                           _showSoonSnack(v
-                              ? 'تم تفعيل المزامنة التلقائية بين الخطط ✅'
-                              : 'تم إيقاف المزامنة التلقائية بين الخطط');
+                              ? BodyTalkApp.tr(context,
+                                  en: 'Auto-sync enabled ✅',
+                                  fr: 'Synchronisation automatique activée ✅',
+                                  ar: 'تم تفعيل المزامنة التلقائية بين الخطط ✅')
+                              : BodyTalkApp.tr(context,
+                                  en: 'Auto-sync disabled',
+                                  fr: 'Synchronisation automatique désactivée',
+                                  ar: 'تم إيقاف المزامنة التلقائية بين الخطط'));
+                        },
+                      ),
+                      Divider(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        height: 12,
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeThumbColor: _orange,
+                        inactiveThumbColor: Colors.grey.shade500,
+                        inactiveTrackColor:
+                            Colors.white.withValues(alpha: 0.12),
+                        title: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Enable biometric login',
+                              fr: 'Activer la connexion biométrique',
+                              ar: 'تفعيل تسجيل الدخول بالبصمة'),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14),
+                        ),
+                        subtitle: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Use Face ID / Fingerprint to login quickly.',
+                              fr: 'Utilisez Face ID / empreinte digitale pour vous connecter rapidement.',
+                              ar: 'استخدم Face ID / البصمة لتسجيل الدخول بسرعة.'),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                        value: _biometricEnabled,
+                        onChanged: (v) async {
+                          if (v) {
+                            // Check if biometric is available
+                            final canUse = await FaceAuthService.instance
+                                .canCheckBiometrics();
+                            if (!canUse) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(BodyTalkApp.tr(context,
+                                      en: 'Biometric authentication not available on this device.',
+                                      fr: "L'authentification biométrique n'est pas disponible sur cet appareil.",
+                                      ar: 'المصادقة البيومترية غير متوفرة على هذا الجهاز.')),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                              return;
+                            }
+                            // Test authentication
+                            final authenticated =
+                                await FaceAuthService.instance.authenticate(
+                              reason: BodyTalkApp.tr(context,
+                                  en: 'Verify to enable biometric login',
+                                  fr: 'Vérifiez pour activer la connexion biométrique',
+                                  ar: 'تحقق لتفعيل تسجيل الدخول بالبصمة'),
+                            );
+                            if (!authenticated) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(BodyTalkApp.tr(context,
+                                      en: 'Biometric verification failed.',
+                                      fr: 'Échec de la vérification biométrique.',
+                                      ar: 'فشل التحقق البيومتري.')),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                              return;
+                            }
+                          }
+                          setState(() => _biometricEnabled = v);
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('biometric_enabled', v);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(v
+                                  ? BodyTalkApp.tr(context,
+                                      en: 'Biometric login enabled ✅',
+                                      fr: 'Connexion biométrique activée ✅',
+                                      ar: 'تم تفعيل تسجيل الدخول بالبصمة ✅')
+                                  : BodyTalkApp.tr(context,
+                                      en: 'Biometric login disabled',
+                                      fr: 'Connexion biométrique désactivée',
+                                      ar: 'تم إيقاف تسجيل الدخول بالبصمة')),
+                              backgroundColor: v ? Colors.green : Colors.grey,
+                            ),
+                          );
                         },
                       ),
                     ],
@@ -821,7 +973,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 _sectionCard(
                   icon: Icons.language,
-                  title: 'اللغة',
+                  title: BodyTalkApp.tr(context,
+                      en: 'Language', fr: 'Langue', ar: 'اللغة'),
                   child: Column(
                     children: [
                       ListTile(
@@ -853,84 +1006,151 @@ class _ProfilePageState extends State<ProfilePage> {
                 // 💳 الاشتراك والتجربة المجانية
                 _sectionCard(
                   icon: Icons.workspace_premium_outlined,
-                  title: 'الاشتراك والتجربة المجانية',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'الوضع الحالي:',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: Colors.green.withValues(alpha: 0.18),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                  title: BodyTalkApp.tr(context,
+                      en: 'Subscription Status',
+                      fr: "Statut d'abonnement",
+                      ar: 'حالة الاشتراك'),
+                  child: _loadingSubscription
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child:
+                                CircularProgressIndicator(color: Colors.white),
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.check_circle,
-                                color: Colors.greenAccent, size: 16),
-                            SizedBox(width: 6),
                             Text(
-                              'نسخة تجريبية مع خطط اشتراك مستقبلية',
-                              style: TextStyle(
-                                color: Colors.white,
+                              BodyTalkApp.tr(context,
+                                  en: 'Current status:',
+                                  fr: 'Statut actuel :',
+                                  ar: 'الوضع الحالي:'),
+                              style: const TextStyle(
+                                color: Colors.white70,
                                 fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                color: _subscriptionStatus == 'active'
+                                    ? Colors.green.withValues(alpha: 0.2)
+                                    : _subscriptionStatus == 'trial'
+                                        ? Colors.blue.withValues(alpha: 0.2)
+                                        : Colors.grey.withValues(alpha: 0.2),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _subscriptionStatus == 'active'
+                                        ? Icons.check_circle
+                                        : _subscriptionStatus == 'trial'
+                                            ? Icons.timer
+                                            : Icons.block,
+                                    color: _subscriptionStatus == 'active'
+                                        ? Colors.greenAccent
+                                        : _subscriptionStatus == 'trial'
+                                            ? Colors.blueAccent
+                                            : Colors.grey,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _subscriptionStatus == 'active'
+                                        ? BodyTalkApp.tr(context,
+                                            en: 'Premium',
+                                            fr: 'Premium',
+                                            ar: 'بريميوم')
+                                        : _subscriptionStatus == 'trial'
+                                            ? BodyTalkApp.tr(context,
+                                                en: 'Free Trial',
+                                                fr: 'Essai gratuit',
+                                                ar: 'تجربة مجانية')
+                                            : BodyTalkApp.tr(context,
+                                                en: 'Free',
+                                                fr: 'Gratuit',
+                                                ar: 'مجاني'),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (_subscriptionType != null)
+                              const SizedBox(height: 8),
+                            if (_subscriptionType != null)
+                              Text(
+                                '${BodyTalkApp.tr(context, en: 'Type:', fr: 'Type :', ar: 'النوع:')} $_subscriptionType',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            if (_subscriptionExpiry != null)
+                              const SizedBox(height: 4),
+                            if (_subscriptionExpiry != null)
+                              Text(
+                                '${BodyTalkApp.tr(context, en: 'Expires:', fr: 'Expire :', ar: 'تنتهي:')} ${_subscriptionExpiry!.year}-${_subscriptionExpiry!.month.toString().padLeft(2, '0')}-${_subscriptionExpiry!.day.toString().padLeft(2, '0')}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'في النسخ القادمة يمكن تفعيل تجربة مجانية (مثلاً 3 أيام)، ثم '
+                              'الاشتراك الشهري أو السنوي عبر طرق دفع مثل Apple Pay و Google Pay، '
+                              'للوصول إلى تحليلات أعمق وخطط مخصصة أكثر.',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.78),
+                                fontSize: 12,
+                                height: 1.6,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _showSoonSnack(
+                                    'إدارة الاشتراك ستُفعَّل عند ربط التطبيق ببوابة دفع 🔑'),
+                                icon: const Icon(Icons.credit_card_outlined,
+                                    size: 18),
+                                label: const Text(
+                                  'إدارة الاشتراك (قريبًا)',
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'في النسخ القادمة يمكن تفعيل تجربة مجانية (مثلاً 3 أيام)، ثم '
-                        'الاشتراك الشهري أو السنوي عبر طرق دفع مثل Apple Pay و Google Pay، '
-                        'للوصول إلى تحليلات أعمق وخطط مخصصة أكثر.',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.78),
-                          fontSize: 12,
-                          height: 1.6,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _showSoonSnack(
-                              'إدارة الاشتراك ستُفعَّل عند ربط التطبيق ببوابة دفع 🔑'),
-                          icon:
-                              const Icon(Icons.credit_card_outlined, size: 18),
-                          label: const Text(
-                            'إدارة الاشتراك (قريبًا)',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.5),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
 
                 // ℹ️ حول التطبيق
                 _sectionCard(
                   icon: Icons.info_outline,
-                  title: 'حول التطبيق',
+                  title: BodyTalkApp.tr(context,
+                      en: 'About the app',
+                      fr: "À propos de l'application",
+                      ar: 'حول التطبيق'),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

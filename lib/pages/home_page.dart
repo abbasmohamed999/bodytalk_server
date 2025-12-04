@@ -23,6 +23,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   File? _image;
   bool _loading = false;
   bool _isPicking = false;
+  Map<String, dynamic>? _userProfile;
 
   // 📸 اختيار صورة الجسم
   Future<void> _pickImage() async {
@@ -42,6 +43,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       debugPrint("❌ خطأ في اختيار الصورة: $e");
     } finally {
       _isPicking = false;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final profile = await ApiService.getProfile();
+    if (mounted && profile != null) {
+      setState(() => _userProfile = profile);
     }
   }
 
@@ -144,98 +158,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> _showHistory() async {
-    final body = await ApiService.getBodyHistory();
-    final food = await ApiService.getFoodHistory();
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF020617),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return Directionality(
-          textDirection: Directionality.of(context),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    BodyTalkApp.tr(
-                      context,
-                      en: 'History',
-                      fr: 'Historique',
-                      ar: 'السجل',
-                    ),
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    BodyTalkApp.tr(context,
-                        en: 'Body analyses',
-                        fr: 'Analyses du corps',
-                        ar: 'تحليلات الجسم'),
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                  const SizedBox(height: 6),
-                  ...(body ?? []).take(10).map((e) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.monitor_weight_outlined,
-                                color: Colors.white70, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '${e['shape'] ?? ''} • BF ${e['body_fat'] ?? ''}% • BMI ${e['bmi'] ?? ''}',
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 13),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )),
-                  const SizedBox(height: 12),
-                  Text(
-                    BodyTalkApp.tr(context,
-                        en: 'Food analyses',
-                        fr: 'Analyses des repas',
-                        ar: 'تحليلات الوجبات'),
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                  const SizedBox(height: 6),
-                  ...(food ?? []).take(10).map((e) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.restaurant_rounded,
-                                color: Colors.white70, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '${e['meal_name'] ?? ''} • ${e['calories'] ?? ''} kcal • P ${e['protein'] ?? ''}g',
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 13),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildHeader(Color orange, Color blue) {
     return Container(
       decoration: BoxDecoration(
@@ -292,49 +214,41 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ],
           ),
           const Spacer(),
-          Row(
-            children: [
-              InkWell(
-                onTap: _showHistory,
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.history,
+          // User Avatar instead of Settings
+          InkWell(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            ),
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  width: 2,
+                ),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  _userProfile?['name']
+                          ?.toString()
+                          .substring(0, 1)
+                          .toUpperCase() ??
+                      'U',
+                  style: const TextStyle(
                     color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfilePage()),
-                ),
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.settings_outlined,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
