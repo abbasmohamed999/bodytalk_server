@@ -24,6 +24,7 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
   File? _imageFile;
   bool _loading = false;
   Map<String, dynamic>? _result;
+  String _selectedCuisine = 'general'; // Default cuisine
 
   double _num(dynamic v) {
     if (v is num) return v.toDouble();
@@ -73,8 +74,14 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
     });
 
     try {
+      // الحصول على اللغة الحالية
+      final currentLang = BodyTalkApp.getLocaleCode(context) ?? 'en';
       // الآن الدالة ترجع Map<String, dynamic>؟
-      final data = await ApiService.analyzeFoodImage(_imageFile!);
+      final data = await ApiService.analyzeFoodImage(
+        _imageFile!,
+        language: currentLang,
+        cuisine: _selectedCuisine,
+      );
 
       if (!mounted) return;
 
@@ -84,8 +91,10 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
           _loading = false;
           _result = {
             "success": false,
-            "message":
-                "فشل الاتصال بالسيرفر. تأكد من اتصال الإنترنت وأن السيرفر يعمل."
+            "message": BodyTalkApp.tr(context,
+                en: 'Failed to connect to server. Check your internet and server status.',
+                fr: 'Échec de connexion au serveur. Vérifiez votre internet et l’état du serveur.',
+                ar: 'فشل الاتصال بالسيرفر. تأكد من اتصال الإنترنت وأن السيرفر يعمل.'),
           };
         });
         return;
@@ -157,6 +166,11 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
                   _infoCard(primaryBlue)
                       .animate()
                       .fadeIn(duration: 500.ms, delay: 100.ms)
+                      .slideY(begin: 0.2),
+                  const SizedBox(height: 16),
+                  _cuisineSelectorCard(primaryBlue)
+                      .animate()
+                      .fadeIn(duration: 500.ms, delay: 110.ms)
                       .slideY(begin: 0.2),
                   const SizedBox(height: 16),
                   _buttonsSection(accentOrange)
@@ -295,6 +309,79 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cuisineSelectorCard(Color primaryBlue) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            BodyTalkApp.tr(context,
+                en: 'Cuisine type', fr: 'Type de cuisine', ar: 'نوع المطبخ'),
+            style: GoogleFonts.tajawal(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            initialValue: _selectedCuisine,
+            dropdownColor: const Color(0xFF020617),
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.06),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide:
+                    BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide:
+                    BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+              ),
+            ),
+            items: [
+              DropdownMenuItem(
+                value: 'general',
+                child: Text(BodyTalkApp.tr(context,
+                    en: 'General', fr: 'Général', ar: 'عام')),
+              ),
+              DropdownMenuItem(
+                value: 'arabic',
+                child: Text(BodyTalkApp.tr(context,
+                    en: 'Arabic', fr: 'Arabe', ar: 'عربي')),
+              ),
+              DropdownMenuItem(
+                value: 'italian',
+                child: Text(BodyTalkApp.tr(context,
+                    en: 'Italian', fr: 'Italien', ar: 'إيطالي')),
+              ),
+              DropdownMenuItem(
+                value: 'asian',
+                child: Text(BodyTalkApp.tr(context,
+                    en: 'Asian', fr: 'Asiatique', ar: 'آسيوي')),
+              ),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => _selectedCuisine = value);
+              }
+            },
           ),
         ],
       ),
@@ -598,7 +685,12 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  mealName.isEmpty ? "تحليل الوجبة" : mealName,
+                  BodyTalkApp.tr(
+                    context,
+                    en: 'Meal analysis',
+                    fr: 'Analyse du repas',
+                    ar: 'تحليل الوجبة',
+                  ),
                   style: GoogleFonts.tajawal(
                     color: Colors.white,
                     fontSize: 15,
@@ -607,7 +699,12 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "السعرات التقريبية: ${calories.toStringAsFixed(0)} سعرة",
+                  BodyTalkApp.tr(
+                    context,
+                    en: 'Approx. calories: ${calories.toStringAsFixed(0)} kcal',
+                    fr: 'Calories approx. : ${calories.toStringAsFixed(0)} kcal',
+                    ar: 'السعرات التقريبية: ${calories.toStringAsFixed(0)} سعرة',
+                  ),
                   style: GoogleFonts.tajawal(
                     color: Colors.white70,
                     fontSize: 13,
@@ -627,8 +724,12 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
       children: [
         Expanded(
           child: _macroCard(
-            title: "بروتين",
-            value: "${protein.toStringAsFixed(0)} جم",
+            title: BodyTalkApp.tr(context,
+                en: 'Protein', fr: 'Protéines', ar: 'بروتين'),
+            value: BodyTalkApp.tr(context,
+                en: '${protein.toStringAsFixed(0)} g',
+                fr: '${protein.toStringAsFixed(0)} g',
+                ar: '${protein.toStringAsFixed(0)} جم'),
             color: primaryBlue,
             icon: Icons.egg_alt_rounded,
           ),
@@ -636,8 +737,12 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
         const SizedBox(width: 10),
         Expanded(
           child: _macroCard(
-            title: "كربوهيدرات",
-            value: "${carbs.toStringAsFixed(0)} جم",
+            title: BodyTalkApp.tr(context,
+                en: 'Carbs', fr: 'Glucides', ar: 'كربوهيدرات'),
+            value: BodyTalkApp.tr(context,
+                en: '${carbs.toStringAsFixed(0)} g',
+                fr: '${carbs.toStringAsFixed(0)} g',
+                ar: '${carbs.toStringAsFixed(0)} جم'),
             color: accentOrange,
             icon: Icons.rice_bowl_rounded,
           ),
@@ -645,8 +750,12 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
         const SizedBox(width: 10),
         Expanded(
           child: _macroCard(
-            title: "دهون",
-            value: "${fats.toStringAsFixed(0)} جم",
+            title:
+                BodyTalkApp.tr(context, en: 'Fats', fr: 'Lipides', ar: 'دهون'),
+            value: BodyTalkApp.tr(context,
+                en: '${fats.toStringAsFixed(0)} g',
+                fr: '${fats.toStringAsFixed(0)} g',
+                ar: '${fats.toStringAsFixed(0)} جم'),
             color: Colors.pinkAccent,
             icon: Icons.oil_barrel_rounded,
           ),
@@ -722,7 +831,12 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "نصيحة غذائية من الذكاء الاصطناعي",
+                  BodyTalkApp.tr(
+                    context,
+                    en: 'AI nutrition advice',
+                    fr: "Conseil nutritionnel de l'IA",
+                    ar: 'نصيحة غذائية من الذكاء الاصطناعي',
+                  ),
                   style: GoogleFonts.tajawal(
                     color: Colors.white,
                     fontSize: 14,

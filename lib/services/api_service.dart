@@ -123,10 +123,67 @@ class ApiService {
     }
   }
 
+  /// Social Login (Google/Apple) - يرجع access_token
+  static Future<Map<String, dynamic>?> socialLogin({
+    required String provider,
+    required String idToken,
+    String? accessToken,
+    String? email,
+    String? name,
+    String? photoUrl,
+    String? userId,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/auth/social-login');
+    final payload = {
+      'provider': provider,
+      'id_token': idToken,
+      'access_token': accessToken,
+      'email': email,
+      'name': name,
+      'photo_url': photoUrl,
+      'user_id': userId,
+    };
+    debugPrint('🌐 Social Login Request: $uri');
+    debugPrint('📦 Provider: $provider');
+    debugPrint('📧 Email: $email');
+    debugPrint('👤 Name: $name');
+
+    try {
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+
+      debugPrint('📥 Social Login Status: ${response.statusCode}');
+      debugPrint('📥 Social Login Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final token = data['access_token'] as String?;
+        if (token != null) {
+          await _saveToken(token);
+        }
+        return data;
+      } else {
+        final error = jsonDecode(response.body);
+        return {'error': error['detail'] ?? 'Social login failed'};
+      }
+    } catch (e) {
+      debugPrint('❌ Social Login Exception: $e');
+      return {'error': e.toString()};
+    }
+  }
+
   /// طلب إعادة تعيين كلمة المرور
   static Future<Map<String, dynamic>?> requestPasswordReset(
       String email) async {
     final uri = Uri.parse('$_baseUrl/auth/forgot-password');
+    debugPrint('🔐 Password Reset Request: $uri');
+    debugPrint('📧 Email: $email');
     try {
       final response = await http.post(
         uri,
@@ -136,16 +193,18 @@ class ApiService {
         },
         body: jsonEncode({'email': email}),
       );
+      debugPrint('📥 Response Status: ${response.statusCode}');
+      debugPrint('📥 Response Body: ${response.body}');
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data;
       } else {
-        debugPrint(
-            'requestPasswordReset failed: ${response.statusCode} ${response.body}');
-        return null;
+        final errorData = jsonDecode(response.body);
+        return {'error': errorData['detail'] ?? 'Password reset failed'};
       }
     } catch (e) {
-      debugPrint('requestPasswordReset error: $e');
-      return null;
+      debugPrint('❌ requestPasswordReset error: $e');
+      return {'error': e.toString()};
     }
   }
 
@@ -275,7 +334,8 @@ class ApiService {
   // ==========================
 
   /// تحليل صورة الجسم – /analysis/body
-  static Future<Map<String, dynamic>?> analyzeBodyImage(File imageFile) async {
+  static Future<Map<String, dynamic>?> analyzeBodyImage(File imageFile,
+      {String? language}) async {
     final uri = Uri.parse('$_baseUrl/analysis/body');
 
     final request = http.MultipartRequest('POST', uri)
@@ -284,10 +344,19 @@ class ApiService {
         await http.MultipartFile.fromPath('file', imageFile.path),
       );
 
+    // إضافة اللغة كمعامل
+    if (language != null) {
+      request.fields['language'] = language;
+    }
+
+    debugPrint('🌐 Body Analysis Request: $uri');
+    debugPrint('🌍 Language: ${language ?? "not specified"}');
+
     try {
       final streamed = await request.send();
       final response = await http.Response.fromStream(streamed);
 
+      debugPrint('📥 Body Analysis Status: ${response.statusCode}');
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
@@ -302,7 +371,8 @@ class ApiService {
   }
 
   /// تحليل صورة الأكل – /analysis/food
-  static Future<Map<String, dynamic>?> analyzeFoodImage(File imageFile) async {
+  static Future<Map<String, dynamic>?> analyzeFoodImage(File imageFile,
+      {String? language, String? cuisine}) async {
     final uri = Uri.parse('$_baseUrl/analysis/food');
 
     final request = http.MultipartRequest('POST', uri)
@@ -311,10 +381,23 @@ class ApiService {
         await http.MultipartFile.fromPath('file', imageFile.path),
       );
 
+    // إضافة اللغة والمطبخ كمعاملات
+    if (language != null) {
+      request.fields['language'] = language;
+    }
+    if (cuisine != null) {
+      request.fields['cuisine'] = cuisine;
+    }
+
+    debugPrint('🌐 Food Analysis Request: $uri');
+    debugPrint('🌍 Language: ${language ?? "not specified"}');
+    debugPrint('🍲 Cuisine: ${cuisine ?? "not specified"}');
+
     try {
       final streamed = await request.send();
       final response = await http.Response.fromStream(streamed);
 
+      debugPrint('📥 Food Analysis Status: ${response.statusCode}');
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {

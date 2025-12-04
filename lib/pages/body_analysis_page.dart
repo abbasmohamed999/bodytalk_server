@@ -43,7 +43,10 @@ class _BodyAnalysisPageState extends State<BodyAnalysisPage> {
     });
 
     try {
-      final data = await ApiService.analyzeBodyImage(widget.imageFile);
+      // الحصول على اللغة الحالية
+      final currentLang = BodyTalkApp.getLocaleCode(context) ?? 'en';
+      final data = await ApiService.analyzeBodyImage(widget.imageFile,
+          language: currentLang);
 
       if (!mounted) return;
 
@@ -52,8 +55,12 @@ class _BodyAnalysisPageState extends State<BodyAnalysisPage> {
           _loading = false;
           _result = {
             "success": false,
-            "message":
-                "فشل الاتصال بالسيرفر. تأكد من اتصال الإنترنت وأن السيرفر يعمل بشكل صحيح."
+            "message": BodyTalkApp.tr(
+              context,
+              en: 'Failed to connect to server. Check your internet and server status.',
+              fr: 'Échec de connexion au serveur. Vérifiez votre internet et l’état du serveur.',
+              ar: 'فشل الاتصال بالسيرفر. تأكد من اتصال الإنترنت وأن السيرفر يعمل بشكل صحيح.',
+            )
           };
         });
         return;
@@ -73,8 +80,12 @@ class _BodyAnalysisPageState extends State<BodyAnalysisPage> {
         _loading = false;
         _result = {
           "success": false,
-          "message":
-              "فشل الاتصال بالسيرفر. تأكد من اتصال الإنترنت وأن السيرفر يعمل بشكل صحيح."
+          "message": BodyTalkApp.tr(
+            context,
+            en: 'Failed to connect to server. Check your internet and server status.',
+            fr: 'Échec de connexion au serveur. Vérifiez votre internet et l’état du serveur.',
+            ar: 'فشل الاتصال بالسيرفر. تأكد من اتصال الإنترنت وأن السيرفر يعمل بشكل صحيح.',
+          )
         };
       });
     }
@@ -571,17 +582,10 @@ class _BodyAnalysisPageState extends State<BodyAnalysisPage> {
       child: Row(
         children: [
           _extraItem(
-            label: "BMI",
-            value: bmi.toStringAsFixed(1),
-          ),
-          Container(
-            height: 36,
-            width: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            color: Colors.white.withValues(alpha: 0.25),
-          ),
-          _extraItem(
-            label: "الطول / العرض",
+            label: BodyTalkApp.tr(context,
+                en: 'Height / Width',
+                fr: 'Hauteur / Largeur',
+                ar: 'الطول / العرض'),
             value: aspect.toStringAsFixed(3),
           ),
         ],
@@ -647,7 +651,12 @@ class _BodyAnalysisPageState extends State<BodyAnalysisPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "نصيحة من الذكاء الاصطناعي",
+                  BodyTalkApp.tr(
+                    context,
+                    en: 'AI advice',
+                    fr: "Conseil de l'IA",
+                    ar: 'نصيحة من الذكاء الاصطناعي',
+                  ),
                   style: GoogleFonts.tajawal(
                     color: Colors.white,
                     fontSize: 14,

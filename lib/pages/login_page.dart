@@ -1,5 +1,6 @@
 // lib/pages/login_page.dart
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +9,7 @@ import 'package:bodytalk_app/main.dart';
 
 import '../services/face_auth_service.dart';
 import '../services/api_service.dart';
+import '../services/social_auth_service.dart';
 import 'main_navigation.dart';
 import 'signup_page.dart';
 
@@ -182,6 +184,108 @@ class _LoginPageState extends State<LoginPage> {
             ar: 'فشل التحقق عبر Face ID / البصمة',
           )),
           backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() => _loading = true);
+    try {
+      final result = await SocialAuthService.signInWithGoogle();
+      if (!mounted) return;
+      setState(() => _loading = false);
+      if (result != null && result['access_token'] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(
+              context,
+              en: 'Signed in with Google ✅',
+              fr: 'Connecté avec Google ✅',
+              ar: 'تم تسجيل الدخول عبر Google ✅',
+            )),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        );
+      } else {
+        final msg = result?['error']?.toString() ??
+            BodyTalkApp.tr(
+              context,
+              en: 'Google sign-in failed',
+              fr: 'Échec de la connexion Google',
+              ar: 'فشل تسجيل الدخول عبر Google',
+            );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: Colors.redAccent),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(BodyTalkApp.tr(
+            context,
+            en: 'Unexpected Google sign-in error',
+            fr: 'Erreur inattendue de connexion Google',
+            ar: 'خطأ غير متوقع أثناء تسجيل الدخول عبر Google',
+          )),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _loginWithApple() async {
+    setState(() => _loading = true);
+    try {
+      final result = await SocialAuthService.signInWithApple();
+      if (!mounted) return;
+      setState(() => _loading = false);
+      if (result != null && result['access_token'] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(
+              context,
+              en: 'Signed in with Apple ✅',
+              fr: 'Connecté avec Apple ✅',
+              ar: 'تم تسجيل الدخول عبر Apple ✅',
+            )),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        );
+      } else {
+        final msg = result?['error']?.toString() ??
+            BodyTalkApp.tr(
+              context,
+              en: 'Apple sign-in failed',
+              fr: 'Échec de la connexion Apple',
+              ar: 'فشل تسجيل الدخول عبر Apple',
+            );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: Colors.redAccent),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(BodyTalkApp.tr(
+            context,
+            en: 'Unexpected Apple sign-in error',
+            fr: 'Erreur inattendue de connexion Apple',
+            ar: 'خطأ غير متوقع أثناء تسجيل الدخول عبر Apple',
+          )),
+          backgroundColor: Colors.redAccent,
         ),
       );
     }
@@ -666,6 +770,85 @@ class _LoginPageState extends State<LoginPage> {
                             onPressed: _loading ? null : _loginWithFace,
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              BodyTalkApp.tr(
+                                context,
+                                en: 'Or continue with',
+                                fr: 'Ou continuer avec',
+                                ar: 'أو المتابعة عبر',
+                              ),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Divider(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.g_mobiledata_rounded),
+                            label: Text(
+                              BodyTalkApp.tr(context,
+                                  en: 'Google', fr: 'Google', ar: 'Google'),
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                width: 1.2,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: _loading ? null : _loginWithGoogle,
+                          ),
+                        ),
+                        if (Platform.isIOS) const SizedBox(height: 10),
+                        if (Platform.isIOS)
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.apple),
+                              label: Text(
+                                BodyTalkApp.tr(context,
+                                    en: 'Apple', fr: 'Apple', ar: 'Apple'),
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  width: 1.2,
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: _loading ? null : _loginWithApple,
+                            ),
+                          ),
                       ],
                     ),
                   ),

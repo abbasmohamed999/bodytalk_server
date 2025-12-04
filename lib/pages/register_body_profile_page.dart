@@ -78,12 +78,22 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
     setState(() => _submitting = false);
 
     if (response == null) {
-      _showSnack('تعذر الاتصال بالسيرفر، تأكد أنه يعمل.');
+      _showSnack(BodyTalkApp.tr(
+        context,
+        en: 'Unable to connect to server. Please check your connection.',
+        fr: 'Impossible de se connecter au serveur. Vérifiez votre connexion.',
+        ar: 'تعذر الاتصال بالسيرفر، تأكد أنه يعمل.',
+      ));
       return;
     }
 
     if (response.statusCode == 200) {
-      _showSnack('تم إنشاء الحساب بنجاح ✅');
+      _showSnack(BodyTalkApp.tr(
+        context,
+        en: 'Account created successfully ✅',
+        fr: 'Compte créé avec succès ✅',
+        ar: 'تم إنشاء الحساب بنجاح ✅',
+      ));
 
       final loginResult = await ApiService.login(
         email: email,
@@ -91,16 +101,32 @@ class _RegisterBodyProfilePageState extends State<RegisterBodyProfilePage> {
       );
 
       if (loginResult == null) {
-        _showSnack('تم إنشاء الحساب لكن فشل تسجيل الدخول تلقائيًا.');
+        if (!mounted) return;
+        _showSnack(BodyTalkApp.tr(
+          context,
+          en: 'Account created but auto-login failed.',
+          fr: 'Compte créé mais la connexion automatique a échoué.',
+          ar: 'تم إنشاء الحساب لكن فشل تسجيل الدخول تلقائيًا.',
+        ));
         return;
       }
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, HomePage.routeName);
     } else if (response.statusCode == 400 || response.statusCode == 409) {
-      _showSnack('البريد الإلكتروني مستخدم بالفعل أو بيانات غير صحيحة.');
+      _showSnack(BodyTalkApp.tr(
+        context,
+        en: 'Email already in use or invalid data.',
+        fr: 'E-mail déjà utilisé ou données invalides.',
+        ar: 'البريد الإلكتروني مستخدم بالفعل أو بيانات غير صحيحة.',
+      ));
     } else {
-      _showSnack('حدث خطأ غير متوقع: ${response.statusCode}');
+      _showSnack(BodyTalkApp.tr(
+        context,
+        en: 'Unexpected error: ${response.statusCode}',
+        fr: 'Erreur inattendue: ${response.statusCode}',
+        ar: 'حدث خطأ غير متوقع: ${response.statusCode}',
+      ));
     }
   }
 
