@@ -1,4 +1,4 @@
-package com.example.bodytalk_app
+package com.bodytalk.ai
 
 import io.flutter.embedding.android.FlutterActivity
 

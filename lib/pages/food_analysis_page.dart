@@ -43,8 +43,25 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
 
       setState(() {
         _imageFile = File(picked.path);
-        _result = null; // نعيد تعيين النتيجة
-        _loading = false; // لا تحليل تلقائي
+        _result = null;
+        _loading = false;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _takePhoto() async {
+    try {
+      final picked = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
+      if (picked == null) return;
+
+      setState(() {
+        _imageFile = File(picked.path);
+        _result = null;
+        _loading = false;
       });
     } catch (_) {}
   }
@@ -388,64 +405,103 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
     );
   }
 
-  /// قسم الأزرار: (اختر صورة للوجبة) + (ابدأ تحليل الوجبة)
+  /// قسم الأزرار: (اختر صورة للوجبة) + (التقط صورة) + (ابدأ تحليل الوجبة)
   Widget _buttonsSection(Color accentOrange) {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _loading ? null : _pickImage,
-            icon: const Icon(Icons.image_rounded),
-            label: Text(
-              BodyTalkApp.tr(
-                context,
-                en: 'Pick a meal image',
-                fr: 'Choisir une image du repas',
-                ar: 'اختر صورة للوجبة',
-              ),
-              style: GoogleFonts.tajawal(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _loading ? null : _pickImage,
+                icon: const Icon(Icons.photo_library_rounded, size: 18),
+                label: Text(
+                  BodyTalkApp.tr(
+                    context,
+                    en: 'Gallery',
+                    fr: 'Galerie',
+                    ar: 'المعرض',
+                  ),
+                  style: GoogleFonts.tajawal(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _loading ? null : _takePhoto,
+                icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                label: Text(
+                  BodyTalkApp.tr(
+                    context,
+                    en: 'Camera',
+                    fr: 'Caméra',
+                    ar: 'الكاميرا',
+                  ),
+                  style: GoogleFonts.tajawal(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: _loading || _imageFile == null ? null : () => _analyze(),
-            icon: const Icon(Icons.analytics_rounded),
+            icon: _loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.analytics_rounded),
             label: Text(
               _loading
                   ? BodyTalkApp.tr(context,
-                      en: 'Analyzing meal...',
-                      fr: 'Analyse du repas...',
-                      ar: 'جاري تحليل الوجبة...')
+                      en: 'Analyzing...',
+                      fr: 'Analyse...',
+                      ar: 'جاري التحليل...')
                   : BodyTalkApp.tr(context,
-                      en: 'Analyze meal',
-                      fr: 'Analyser le repas',
-                      ar: 'ابدأ تحليل الوجبة'),
+                      en: 'Analyze Meal',
+                      fr: 'Analyser le Repas',
+                      ar: 'تحليل الوجبة'),
               style: GoogleFonts.tajawal(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: accentOrange,
+              backgroundColor: _imageFile != null ? accentOrange : Colors.grey,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
           ),

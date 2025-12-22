@@ -7,8 +7,13 @@ import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 
 class SocialAuthService {
+  // Web Client ID from google-services.json (client_type: 3)
+  static const String _webClientId =
+      '629431974850-npuon8isrpd3gdefluahcv3tvvoefmbt.apps.googleusercontent.com';
+
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
+    scopes: ['email', 'profile', 'openid'],
+    serverClientId: _webClientId,
   );
 
   /// Google Sign-In

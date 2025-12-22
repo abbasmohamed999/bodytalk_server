@@ -25,9 +25,13 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _darkMode = true;
   bool _autoSyncPlan = false;
   bool _biometricEnabled = false;
-  String _language = 'العربية';
-  String _gender = 'غير محدد';
+  String _gender = '';
   int? _age;
+
+  // User profile data from backend
+  bool _loadingProfile = true;
+  String _userName = '';
+  String _userEmail = '';
 
   // Subscription status
   bool _loadingSubscription = true;
@@ -39,7 +43,301 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadPrefs();
+    _loadUserProfile();
     _loadSubscriptionStatus();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Load dark mode state from app
+    _darkMode = BodyTalkApp.isDarkMode(context);
+  }
+
+  /// Load user profile from backend
+  Future<void> _loadUserProfile() async {
+    setState(() => _loadingProfile = true);
+    try {
+      final data = await ApiService.getProfile();
+      if (!mounted) return;
+      if (data != null) {
+        setState(() {
+          _userName = data['full_name'] ?? data['name'] ?? '';
+          _userEmail = data['email'] ?? '';
+          // Load gender from backend
+          final backendGender = data['gender'];
+          if (backendGender != null && backendGender.toString().isNotEmpty) {
+            _gender = backendGender.toString();
+          }
+          // Load age from backend
+          if (data['age'] != null) {
+            _age = data['age'] as int?;
+          }
+          _loadingProfile = false;
+        });
+      } else {
+        setState(() => _loadingProfile = false);
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to load profile: $e');
+      if (!mounted) return;
+      setState(() => _loadingProfile = false);
+    }
+  }
+
+  /// Edit name dialog
+  Future<void> _editName() async {
+    final controller = TextEditingController(text: _userName);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _bg,
+        title: Text(
+          BodyTalkApp.tr(context,
+              en: 'Edit Name', fr: 'Modifier le nom', ar: 'تعديل الاسم'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: BodyTalkApp.tr(context,
+                en: 'Enter your name', fr: 'Entrez votre nom', ar: 'أدخل اسمك'),
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            enabledBorder: OutlineInputBorder(
+              borderSide:
+                  BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: _orange),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              BodyTalkApp.tr(context, en: 'Cancel', fr: 'Annuler', ar: 'إلغاء'),
+              style: const TextStyle(color: Colors.white70),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: _orange),
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(
+              BodyTalkApp.tr(context, en: 'Save', fr: 'Enregistrer', ar: 'حفظ'),
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && result != _userName) {
+      final updated = await ApiService.updateProfile({'full_name': result});
+      if (!mounted) return;
+      if (updated != null) {
+        setState(() => _userName = result);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Name updated successfully ✅',
+                fr: 'Nom mis à jour avec succès ✅',
+                ar: 'تم تحديث الاسم بنجاح ✅')),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Failed to update name',
+                fr: 'Échec de la mise à jour du nom',
+                ar: 'فشل تحديث الاسم')),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Edit email dialog
+  Future<void> _editEmail() async {
+    final controller = TextEditingController(text: _userEmail);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _bg,
+        title: Text(
+          BodyTalkApp.tr(context,
+              en: 'Edit Email',
+              fr: "Modifier l'e-mail",
+              ar: 'تعديل البريد الإلكتروني'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: BodyTalkApp.tr(context,
+                en: 'Enter your email',
+                fr: 'Entrez votre e-mail',
+                ar: 'أدخل بريدك الإلكتروني'),
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            enabledBorder: OutlineInputBorder(
+              borderSide:
+                  BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: _orange),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              BodyTalkApp.tr(context, en: 'Cancel', fr: 'Annuler', ar: 'إلغاء'),
+              style: const TextStyle(color: Colors.white70),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: _orange),
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(
+              BodyTalkApp.tr(context, en: 'Save', fr: 'Enregistrer', ar: 'حفظ'),
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && result != _userEmail) {
+      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+      if (!emailRegex.hasMatch(result)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Invalid email format',
+                fr: 'Format d\'e-mail invalide',
+                ar: 'صيغة البريد الإلكتروني غير صحيحة')),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+      final updated = await ApiService.updateProfile({'email': result});
+      if (!mounted) return;
+      if (updated != null) {
+        setState(() => _userEmail = result);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Email updated successfully ✅',
+                fr: 'E-mail mis à jour avec succès ✅',
+                ar: 'تم تحديث البريد الإلكتروني بنجاح ✅')),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Failed to update email',
+                fr: 'Échec de la mise à jour de l\'e-mail',
+                ar: 'فشل تحديث البريد الإلكتروني')),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Change password dialog - sends reset email
+  Future<void> _showChangePasswordDialog() async {
+    if (_userEmail.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(BodyTalkApp.tr(context,
+              en: 'No email found for this account',
+              fr: 'Aucun e-mail trouvé pour ce compte',
+              ar: 'لا يوجد بريد إلكتروني لهذا الحساب')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _bg,
+        title: Text(
+          BodyTalkApp.tr(context,
+              en: 'Reset Password',
+              fr: 'Réinitialiser le mot de passe',
+              ar: 'إعادة تعيين كلمة المرور'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          BodyTalkApp.tr(context,
+              en: 'A password reset link will be sent to:\n$_userEmail',
+              fr: 'Un lien de réinitialisation sera envoyé à :\n$_userEmail',
+              ar: 'سيتم إرسال رابط إعادة تعيين كلمة المرور إلى:\n$_userEmail'),
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              BodyTalkApp.tr(context, en: 'Cancel', fr: 'Annuler', ar: 'إلغاء'),
+              style: const TextStyle(color: Colors.white70),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: _orange),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              BodyTalkApp.tr(context, en: 'Send', fr: 'Envoyer', ar: 'إرسال'),
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final result = await ApiService.requestPasswordReset(_userEmail);
+      if (!mounted) return;
+      if (result != null && result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Password reset link sent to your email ✅',
+                fr: 'Lien de réinitialisation envoyé à votre e-mail ✅',
+                ar: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك ✅')),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Failed to send reset link. Please try again.',
+                fr: 'Échec de l\'envoi du lien. Veuillez réessayer.',
+                ar: 'فشل إرسال الرابط. حاول مرة أخرى.')),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadPrefs() async {
@@ -47,6 +345,7 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       _autoSyncPlan = prefs.getBool('auto_sync_plan') ?? false;
       _biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+      _notifEnabled = prefs.getBool('notifications_enabled') ?? true;
     });
   }
 
@@ -98,20 +397,37 @@ class _ProfilePageState extends State<ProfilePage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("حذف الحساب من هذا الجهاز"),
-        content: const Text(
-          "سيتم حذف بيانات حسابك المخزّنة على هذا الجهاز فقط.\n"
-          "يمكنك لاحقًا تسجيل الدخول أو إنشاء حساب جديد.\n\n"
-          "هل تريد المتابعة؟",
+        backgroundColor: _bg,
+        title: Text(
+          BodyTalkApp.tr(context,
+              en: 'Delete account from this device',
+              fr: 'Supprimer le compte de cet appareil',
+              ar: 'حذف الحساب من هذا الجهاز'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          BodyTalkApp.tr(context,
+              en: 'Only data stored on this device will be deleted.\nYou can log in again or create a new account later.\n\nDo you want to continue?',
+              fr: 'Seules les données stockées sur cet appareil seront supprimées.\nVous pourrez vous reconnecter ou créer un nouveau compte plus tard.\n\nVoulez-vous continuer?',
+              ar: 'سيتم حذف بيانات حسابك المخزّنة على هذا الجهاز فقط.\nيمكنك لاحقًا تسجيل الدخول أو إنشاء حساب جديد.\n\nهل تريد المتابعة؟'),
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("إلغاء"),
+            child: Text(
+              BodyTalkApp.tr(context, en: 'Cancel', fr: 'Annuler', ar: 'إلغاء'),
+              style: const TextStyle(color: Colors.white70),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("تأكيد"),
+            child: Text(
+              BodyTalkApp.tr(context,
+                  en: 'Confirm', fr: 'Confirmer', ar: 'تأكيد'),
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -138,7 +454,11 @@ class _ProfilePageState extends State<ProfilePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          msg ?? 'سيتم تفعيل هذه الميزة في التحديثات القادمة ✨',
+          msg ??
+              BodyTalkApp.tr(context,
+                  en: 'This feature will be activated in upcoming updates ✨',
+                  fr: 'Cette fonctionnalité sera activée dans les prochaines mises à jour ✨',
+                  ar: 'سيتم تفعيل هذه الميزة في التحديثات القادمة ✨'),
           textAlign: TextAlign.center,
         ),
         backgroundColor: Colors.black87,
@@ -185,15 +505,20 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 12),
                 ListTile(
-                  onTap: () => Navigator.pop(ctx, 'ذكر'),
-                  title:
-                      const Text('ذكر', style: TextStyle(color: Colors.white)),
+                  onTap: () => Navigator.pop(ctx, 'male'),
+                  title: Text(
+                    BodyTalkApp.tr(context, en: 'Male', fr: 'Homme', ar: 'ذكر'),
+                    style: const TextStyle(color: Colors.white),
+                  ),
                   trailing: const Icon(Icons.male, color: Colors.white70),
                 ),
                 ListTile(
-                  onTap: () => Navigator.pop(ctx, 'أنثى'),
-                  title:
-                      const Text('أنثى', style: TextStyle(color: Colors.white)),
+                  onTap: () => Navigator.pop(ctx, 'female'),
+                  title: Text(
+                    BodyTalkApp.tr(context,
+                        en: 'Female', fr: 'Femme', ar: 'أنثى'),
+                    style: const TextStyle(color: Colors.white),
+                  ),
                   trailing: const Icon(Icons.female, color: Colors.white70),
                 ),
                 const SizedBox(height: 8),
@@ -205,8 +530,31 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (result != null && mounted) {
-      setState(() => _gender = result);
-      _showSoonSnack('سيتم استخدام الجنس مستقبلاً لتحسين دقة التحليل 💡');
+      // Send to backend immediately
+      final updated = await ApiService.updateProfile({'gender': result});
+      if (!mounted) return;
+      if (updated != null) {
+        setState(() => _gender = result);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Gender updated ✅',
+                fr: 'Genre mis à jour ✅',
+                ar: 'تم تحديث الجنس ✅')),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Failed to update gender',
+                fr: 'Échec de la mise à jour du genre',
+                ar: 'فشل تحديث الجنس')),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -275,7 +623,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (result != null && mounted) {
-      setState(() => _language = result);
       final prefs = await SharedPreferences.getInstance();
       final code = (result == 'العربية')
           ? 'ar'
@@ -286,7 +633,15 @@ class _ProfilePageState extends State<ProfilePage> {
       // تطبيق اللغة فوراً بدون إعادة تشغيل
       if (!mounted) return;
       BodyTalkApp.setLocaleStatic(context, code);
-      _showSoonSnack('Language changed.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(BodyTalkApp.tr(context,
+              en: 'Language changed ✅',
+              fr: 'Langue changée ✅',
+              ar: 'تم تغيير اللغة ✅')),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
@@ -318,9 +673,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      'اختر عمرك التقريبي',
-                      style: TextStyle(
+                    Text(
+                      BodyTalkApp.tr(context,
+                          en: 'Select your approximate age',
+                          fr: 'Sélectionnez votre âge approximatif',
+                          ar: 'اختر عمرك التقريبي'),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -328,7 +686,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '$tempAge سنة',
+                      '$tempAge ${BodyTalkApp.tr(context, en: 'years', fr: 'ans', ar: 'سنة')}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -358,7 +716,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                         onPressed: () => Navigator.pop(ctx, tempAge),
-                        child: const Text('حفظ'),
+                        child: Text(BodyTalkApp.tr(context,
+                            en: 'Save', fr: 'Enregistrer', ar: 'حفظ')),
                       ),
                     ),
                   ],
@@ -371,8 +730,31 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (result != null && mounted) {
-      setState(() => _age = result);
-      _showSoonSnack('سيتم استخدام العمر لتحسين فهم وضعك الصحي العام 🧠');
+      // Send to backend immediately
+      final updated = await ApiService.updateProfile({'age': result});
+      if (!mounted) return;
+      if (updated != null) {
+        setState(() => _age = result);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Age updated ✅',
+                fr: 'Âge mis à jour ✅',
+                ar: 'تم تحديث العمر ✅')),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(BodyTalkApp.tr(context,
+                en: 'Failed to update age',
+                fr: 'Échec de la mise à jour de l\'âge',
+                ar: 'فشل تحديث العمر')),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -432,8 +814,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final ageLabel = _age != null ? '$_age سنة' : 'غير محدد';
-
     return Directionality(
       textDirection: Directionality.of(context),
       child: Scaffold(
@@ -529,133 +909,180 @@ class _ProfilePageState extends State<ProfilePage> {
                       en: 'Personal information',
                       fr: 'Informations personnelles',
                       ar: 'المعلومات الشخصية'),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'الاسم',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
+                  child: _loadingProfile
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child:
+                                CircularProgressIndicator(color: Colors.white),
                           ),
-                        ),
-                        subtitle: const Text(
-                          'اسم المستخدم',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit,
-                              color: Colors.white70, size: 18),
-                          onPressed: () => _showSoonSnack(
-                              'سيتم دعم تعديل الاسم من هنا لاحقًا ✏️'),
-                        ),
-                      ),
-                      Divider(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        height: 12,
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'البريد الإلكتروني',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                          ),
-                        ),
-                        subtitle: const Text(
-                          'user@example.com',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit,
-                              color: Colors.white70, size: 18),
-                          onPressed: () => _showSoonSnack(
-                              'سيتم دعم تغيير البريد الإلكتروني من هنا 📧'),
-                        ),
-                      ),
-                      Divider(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        height: 12,
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: _pickGender,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 4),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'الجنس',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _gender,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
+                        )
+                      : Column(
+                          children: [
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                BodyTalkApp.tr(context,
+                                    en: 'Name', fr: 'Nom', ar: 'الاسم'),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
                                 ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: InkWell(
-                              onTap: _pickAge,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 4),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'العمر التقريبي',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      ageLabel,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
+                              subtitle: Text(
+                                _userName.isNotEmpty
+                                    ? _userName
+                                    : BodyTalkApp.tr(context,
+                                        en: 'Not set',
+                                        fr: 'Non défini',
+                                        ar: 'غير محدد'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
                                 ),
                               ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.edit,
+                                    color: Colors.white70, size: 18),
+                                onPressed: _editName,
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () => _showSoonSnack(
-                                'سيتم الاعتماد على الجنس/العمر بشكل أكبر في التحليل قريبًا 💡'),
-                            icon: const Icon(Icons.info_outline,
-                                size: 18, color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                            Divider(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              height: 12,
+                            ),
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                BodyTalkApp.tr(context,
+                                    en: 'Email',
+                                    fr: 'E-mail',
+                                    ar: 'البريد الإلكتروني'),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              subtitle: Text(
+                                _userEmail.isNotEmpty
+                                    ? _userEmail
+                                    : BodyTalkApp.tr(context,
+                                        en: 'Not set',
+                                        fr: 'Non défini',
+                                        ar: 'غير محدد'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.edit,
+                                    color: Colors.white70, size: 18),
+                                onPressed: _editEmail,
+                              ),
+                            ),
+                            Divider(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              height: 12,
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: _pickGender,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            BodyTalkApp.tr(context,
+                                                en: 'Gender',
+                                                fr: 'Genre',
+                                                ar: 'الجنس'),
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            () {
+                                              if (_gender.isEmpty) {
+                                                return BodyTalkApp.tr(context,
+                                                    en: 'Not set',
+                                                    fr: 'Non défini',
+                                                    ar: 'غير محدد');
+                                              }
+                                              if (_gender == 'male') {
+                                                return BodyTalkApp.tr(context,
+                                                    en: 'Male',
+                                                    fr: 'Homme',
+                                                    ar: 'ذكر');
+                                              }
+                                              if (_gender == 'female') {
+                                                return BodyTalkApp.tr(context,
+                                                    en: 'Female',
+                                                    fr: 'Femme',
+                                                    ar: 'أنثى');
+                                              }
+                                              return _gender;
+                                            }(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: _pickAge,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            BodyTalkApp.tr(context,
+                                                en: 'Age',
+                                                fr: 'Âge',
+                                                ar: 'العمر التقريبي'),
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _age != null
+                                                ? '$_age ${BodyTalkApp.tr(context, en: 'years', fr: 'ans', ar: 'سنة')}'
+                                                : BodyTalkApp.tr(context,
+                                                    en: 'Not set',
+                                                    fr: 'Non défini',
+                                                    ar: 'غير محدد'),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                 ),
 
                 // 🔐 إدارة الحساب
@@ -671,22 +1098,27 @@ class _ProfilePageState extends State<ProfilePage> {
                         contentPadding: EdgeInsets.zero,
                         leading:
                             const Icon(Icons.lock_reset, color: Colors.white70),
-                        title: const Text(
-                          'تغيير كلمة المرور',
-                          style: TextStyle(
+                        title: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Change Password',
+                              fr: 'Changer le mot de passe',
+                              ar: 'تغيير كلمة المرور'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
                         ),
                         subtitle: Text(
-                          'يمكنك لاحقًا إعادة ضبط كلمة المرور من هنا.',
+                          BodyTalkApp.tr(context,
+                              en: 'Reset your password via email.',
+                              fr: 'Réinitialisez votre mot de passe par e-mail.',
+                              ar: 'إعادة تعيين كلمة المرور عبر البريد الإلكتروني.'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                         ),
-                        onTap: () => _showSoonSnack(
-                            'تغيير كلمة المرور سيتوفر في النسخة المتقدمة 🔐'),
+                        onTap: _showChangePasswordDialog,
                       ),
                       Divider(
                         color: Colors.white.withValues(alpha: 0.08),
@@ -696,22 +1128,27 @@ class _ProfilePageState extends State<ProfilePage> {
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.alternate_email,
                             color: Colors.white70),
-                        title: const Text(
-                          'تغيير البريد الإلكتروني',
-                          style: TextStyle(
+                        title: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Change Email',
+                              fr: "Changer l'e-mail",
+                              ar: 'تغيير البريد الإلكتروني'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
                         ),
                         subtitle: Text(
-                          'تعديل البريد المرتبط بالحساب سيتم دعمه لاحقًا.',
+                          BodyTalkApp.tr(context,
+                              en: 'Update the email linked to your account.',
+                              fr: 'Mettez à jour l\'e-mail lié à votre compte.',
+                              ar: 'تحديث البريد المرتبط بحسابك.'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                         ),
-                        onTap: () => _showSoonSnack(
-                            'تغيير البريد الإلكتروني سيتوفر مستقبلًا 📨'),
+                        onTap: _editEmail,
                       ),
                       Divider(
                         color: Colors.white.withValues(alpha: 0.08),
@@ -722,16 +1159,22 @@ class _ProfilePageState extends State<ProfilePage> {
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.logout,
                             color: Colors.orangeAccent),
-                        title: const Text(
-                          'تسجيل الخروج',
-                          style: TextStyle(
+                        title: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Logout',
+                              fr: 'Déconnexion',
+                              ar: 'تسجيل الخروج'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
                         ),
-                        subtitle: const Text(
-                          'إغلاق جلستك الحالية والعودة لصفحة تسجيل الدخول.',
-                          style: TextStyle(
+                        subtitle: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Sign out and return to login page.',
+                              fr: 'Déconnectez-vous et revenez à la page de connexion.',
+                              ar: 'إغلاق جلستك الحالية والعودة لصفحة تسجيل الدخول.'),
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
                           ),
@@ -747,16 +1190,22 @@ class _ProfilePageState extends State<ProfilePage> {
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.delete_forever,
                             color: Colors.redAccent),
-                        title: const Text(
-                          'حذف الحساب من هذا الجهاز',
-                          style: TextStyle(
+                        title: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Delete account from this device',
+                              fr: 'Supprimer le compte de cet appareil',
+                              ar: 'حذف الحساب من هذا الجهاز'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
                         ),
-                        subtitle: const Text(
-                          'سيتم حذف بيانات التطبيق المخزّنة على هذا الجهاز فقط.',
-                          style: TextStyle(
+                        subtitle: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Only data stored on this device will be deleted.',
+                              fr: 'Seules les données stockées sur cet appareil seront supprimées.',
+                              ar: 'سيتم حذف بيانات التطبيق المخزّنة على هذا الجهاز فقط.'),
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
                           ),
@@ -782,25 +1231,46 @@ class _ProfilePageState extends State<ProfilePage> {
                         inactiveThumbColor: Colors.grey.shade500,
                         inactiveTrackColor:
                             Colors.white.withValues(alpha: 0.12),
-                        title: const Text(
-                          'تفعيل الإشعارات',
-                          style: TextStyle(
+                        title: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Enable Notifications',
+                              fr: 'Activer les notifications',
+                              ar: 'تفعيل الإشعارات'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
                         ),
                         subtitle: Text(
-                          'تنبيهات خفيفة لتذكيرك بالتحليل والمتابعة.',
+                          BodyTalkApp.tr(context,
+                              en: 'Light reminders for analysis and follow-up.',
+                              fr: 'Rappels légers pour l\'analyse et le suivi.',
+                              ar: 'تنبيهات خفيفة لتذكيرك بالتحليل والمتابعة.'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                         ),
                         value: _notifEnabled,
-                        onChanged: (v) {
+                        onChanged: (v) async {
                           setState(() => _notifEnabled = v);
-                          _showSoonSnack(
-                              'سيتم ربط الإشعارات مع خطط المتابعة اليومية لاحقًا 🔔');
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('notifications_enabled', v);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(v
+                                  ? BodyTalkApp.tr(context,
+                                      en: 'Notifications enabled 🔔',
+                                      fr: 'Notifications activées 🔔',
+                                      ar: 'تم تفعيل الإشعارات 🔔')
+                                  : BodyTalkApp.tr(context,
+                                      en: 'Notifications disabled',
+                                      fr: 'Notifications désactivées',
+                                      ar: 'تم إيقاف الإشعارات')),
+                              backgroundColor: v ? Colors.green : Colors.grey,
+                            ),
+                          );
                         },
                       ),
                       Divider(
@@ -813,15 +1283,21 @@ class _ProfilePageState extends State<ProfilePage> {
                         inactiveThumbColor: Colors.grey.shade500,
                         inactiveTrackColor:
                             Colors.white.withValues(alpha: 0.12),
-                        title: const Text(
-                          'الوضع الداكن',
-                          style: TextStyle(
+                        title: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Dark Mode',
+                              fr: 'Mode sombre',
+                              ar: 'الوضع الداكن'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
                         ),
                         subtitle: Text(
-                          'الوضع الحالي: داكن، ويمكن إضافة وضع فاتح لاحقًا.',
+                          BodyTalkApp.tr(context,
+                              en: 'Toggle between dark and light themes.',
+                              fr: 'Basculer entre les thèmes sombre et clair.',
+                              ar: 'التبديل بين الوضع الداكن والفاتح.'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
@@ -830,8 +1306,21 @@ class _ProfilePageState extends State<ProfilePage> {
                         value: _darkMode,
                         onChanged: (v) {
                           setState(() => _darkMode = v);
-                          _showSoonSnack(
-                              'دعم أوضاع ألوان متعددة سيتم لاحقًا 🎨');
+                          BodyTalkApp.setThemeModeStatic(context, v);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(v
+                                  ? BodyTalkApp.tr(context,
+                                      en: 'Dark mode enabled 🌙',
+                                      fr: 'Mode sombre activé 🌙',
+                                      ar: 'تم تفعيل الوضع الداكن 🌙')
+                                  : BodyTalkApp.tr(context,
+                                      en: 'Light mode enabled ☀️',
+                                      fr: 'Mode clair activé ☀️',
+                                      ar: 'تم تفعيل الوضع الفاتح ☀️')),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
                         },
                       ),
                       Divider(
@@ -979,15 +1468,22 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'اللغة',
-                          style: TextStyle(
+                        title: Text(
+                          BodyTalkApp.tr(context,
+                              en: 'Language', fr: 'Langue', ar: 'اللغة'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
                         ),
                         subtitle: Text(
-                          _language,
+                          () {
+                            final code =
+                                BodyTalkApp.getLocaleCode(context) ?? 'en';
+                            if (code == 'ar') return 'العربية';
+                            if (code == 'fr') return 'Français';
+                            return 'English';
+                          }(),
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 13,
@@ -1106,9 +1602,10 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             const SizedBox(height: 10),
                             Text(
-                              'في النسخ القادمة يمكن تفعيل تجربة مجانية (مثلاً 3 أيام)، ثم '
-                              'الاشتراك الشهري أو السنوي عبر طرق دفع مثل Apple Pay و Google Pay، '
-                              'للوصول إلى تحليلات أعمق وخطط مخصصة أكثر.',
+                              BodyTalkApp.tr(context,
+                                  en: 'In future updates, you can activate a free trial (e.g. 3 days), then subscribe monthly or yearly via Apple Pay and Google Pay for deeper analysis and more personalized plans.',
+                                  fr: 'Dans les futures mises à jour, vous pourrez activer un essai gratuit (par ex. 3 jours), puis vous abonner mensuellement ou annuellement via Apple Pay et Google Pay pour des analyses plus approfondies.',
+                                  ar: 'في النسخ القادمة يمكن تفعيل تجربة مجانية (مثلاً 3 أيام)، ثم الاشتراك الشهري أو السنوي عبر Apple Pay و Google Pay للوصول إلى تحليلات أعمق وخطط مخصصة.'),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.78),
                                 fontSize: 12,
@@ -1118,22 +1615,48 @@ class _ProfilePageState extends State<ProfilePage> {
                             const SizedBox(height: 14),
                             SizedBox(
                               width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: () => _showSoonSnack(
-                                    'إدارة الاشتراك ستُفعَّل عند ربط التطبيق ببوابة دفع 🔑'),
-                                icon: const Icon(Icons.credit_card_outlined,
-                                    size: 18),
-                                label: const Text(
-                                  'إدارة الاشتراك (قريبًا)',
-                                  style: TextStyle(fontSize: 13),
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final result = await ApiService
+                                      .activateTestSubscription();
+                                  if (!mounted) return;
+                                  if (result != null &&
+                                      result['is_active'] == true) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(BodyTalkApp.tr(context,
+                                            en: 'Test subscription activated! ✅',
+                                            fr: 'Abonnement test activé! ✅',
+                                            ar: 'تم تفعيل الاشتراك التجريبي! ✅')),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                    _loadUserProfile();
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(BodyTalkApp.tr(context,
+                                            en: 'Failed to activate subscription',
+                                            fr: "Échec de l'activation",
+                                            ar: 'فشل تفعيل الاشتراك')),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.star_rounded, size: 18),
+                                label: Text(
+                                  BodyTalkApp.tr(context,
+                                      en: 'Activate Test Subscription',
+                                      fr: 'Activer l\'abonnement test',
+                                      ar: 'تفعيل الاشتراك التجريبي'),
+                                  style: const TextStyle(fontSize: 13),
                                 ),
-                                style: OutlinedButton.styleFrom(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _orange,
                                   foregroundColor: Colors.white,
-                                  side: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                  ),
                                   padding:
-                                      const EdgeInsets.symmetric(vertical: 10),
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
@@ -1154,9 +1677,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'BodyTalk AI – مساعدك نحو حياة صحية أذكى',
-                        style: TextStyle(
+                      Text(
+                        BodyTalkApp.tr(context,
+                            en: 'BodyTalk AI – Your smart health companion',
+                            fr: 'BodyTalk AI – Votre compagnon santé intelligent',
+                            ar: 'BodyTalk AI – مساعدك نحو حياة صحية أذكى'),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -1164,9 +1690,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'يهدف BodyTalk AI إلى مساعدتك على فهم وضعك الصحي بشكل أبسط، '
-                        'من خلال تحليل صور جسمك ووجباتك، وتقديم ملاحظات ونصائح تساعدك '
-                        'على تحسين نمط حياتك، متابعة تقدمك، واتخاذ قرارات صحية أفضل خطوة بخطوة.',
+                        BodyTalkApp.tr(context,
+                            en: 'BodyTalk AI helps you understand your health status by analyzing photos of your body and meals, providing insights and tips to improve your lifestyle, track progress, and make better health decisions step by step.',
+                            fr: 'BodyTalk AI vous aide à comprendre votre état de santé en analysant les photos de votre corps et de vos repas, fournissant des conseils pour améliorer votre mode de vie et suivre vos progrès.',
+                            ar: 'يهدف BodyTalk AI إلى مساعدتك على فهم وضعك الصحي بشكل أبسط، من خلال تحليل صور جسمك ووجباتك، وتقديم ملاحظات ونصائح تساعدك على تحسين نمط حياتك ومتابعة تقدمك.'),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.82),
                           fontSize: 12,
@@ -1175,8 +1702,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'التطبيق ليس بديلاً عن استشارة الطبيب أو الأخصائي، '
-                        'لكنه أداة داعمة تمنحك رؤية أوضح عن جسمك وعاداتك الغذائية.',
+                        BodyTalkApp.tr(context,
+                            en: 'This app is not a substitute for a doctor\'s consultation, but a supportive tool to give you a clearer view of your body and eating habits.',
+                            fr: 'Cette application ne remplace pas la consultation médicale, mais est un outil de soutien pour mieux comprendre votre corps et vos habitudes alimentaires.',
+                            ar: 'التطبيق ليس بديلاً عن استشارة الطبيب أو الأخصائي، لكنه أداة داعمة تمنحك رؤية أوضح عن جسمك وعاداتك الغذائية.'),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 12,
@@ -1187,11 +1716,17 @@ class _ProfilePageState extends State<ProfilePage> {
                       Row(
                         children: [
                           TextButton(
-                            onPressed: () => _showSoonSnack(
-                                'سيتم إضافة صفحة سياسة الخصوصية لاحقًا 📃'),
-                            child: const Text(
-                              'سياسة الخصوصية',
-                              style: TextStyle(
+                            onPressed: () => _showSoonSnack(BodyTalkApp.tr(
+                                context,
+                                en: 'Privacy Policy page will be added soon 📃',
+                                fr: 'La page de politique de confidentialité sera ajoutée bientôt 📃',
+                                ar: 'سيتم إضافة صفحة سياسة الخصوصية لاحقًا 📃')),
+                            child: Text(
+                              BodyTalkApp.tr(context,
+                                  en: 'Privacy Policy',
+                                  fr: 'Politique de confidentialité',
+                                  ar: 'سياسة الخصوصية'),
+                              style: const TextStyle(
                                 color: Colors.lightBlueAccent,
                                 fontSize: 12,
                               ),
@@ -1206,11 +1741,17 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           const SizedBox(width: 4),
                           TextButton(
-                            onPressed: () => _showSoonSnack(
-                                'سيتم إضافة الشروط والأحكام في إصدار قادم 📜'),
-                            child: const Text(
-                              'الشروط والأحكام',
-                              style: TextStyle(
+                            onPressed: () => _showSoonSnack(BodyTalkApp.tr(
+                                context,
+                                en: 'Terms & Conditions will be added soon 📜',
+                                fr: 'Les conditions générales seront ajoutées bientôt 📜',
+                                ar: 'سيتم إضافة الشروط والأحكام قريبًا 📜')),
+                            child: Text(
+                              BodyTalkApp.tr(context,
+                                  en: 'Terms & Conditions',
+                                  fr: 'Conditions générales',
+                                  ar: 'الشروط والأحكام'),
+                              style: const TextStyle(
                                 color: Colors.lightBlueAccent,
                                 fontSize: 12,
                               ),
@@ -1218,7 +1759,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           const Spacer(),
                           Text(
-                            'v0.1.0',
+                            'v1.0.0',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 11,
@@ -1233,7 +1774,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'يمكن ربط هذه الإعدادات لاحقًا بحساب حقيقي وسيرفر ونسخة مدفوعة.',
+                    BodyTalkApp.tr(context,
+                        en: 'Settings can be linked to a real account and server in the future.',
+                        fr: 'Les paramètres peuvent être liés à un compte réel et un serveur à l\'avenir.',
+                        ar: 'يمكن ربط هذه الإعدادات لاحقًا بحساب حقيقي وسيرفر.'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.45),

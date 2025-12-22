@@ -1,10 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:image_picker/image_picker.dart';
 
 import 'profile_page.dart';
-import 'body_analysis_page.dart';
+import 'body_analysis_capture_page.dart';
 import 'food_analysis_page.dart';
 
 import 'package:google_fonts/google_fonts.dart';
@@ -20,31 +18,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  File? _image;
-  bool _loading = false;
-  bool _isPicking = false;
   Map<String, dynamic>? _userProfile;
-
-  // 📸 اختيار صورة الجسم
-  Future<void> _pickImage() async {
-    if (_isPicking || _loading) return;
-    _isPicking = true;
-
-    try {
-      final picked = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-      );
-
-      if (picked != null && mounted) {
-        setState(() => _image = File(picked.path));
-      }
-    } catch (e) {
-      debugPrint("❌ خطأ في اختيار الصورة: $e");
-    } finally {
-      _isPicking = false;
-    }
-  }
 
   @override
   void initState() {
@@ -59,44 +33,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
-  // 🔍 فتح صفحة تحليل الجسم
-  Future<void> _analyzeImage() async {
-    if (_image == null || _loading) return;
-
-    // تحقق الاشتراك قبل التحليل
-    if (ApiService.isLoggedIn) {
-      final sub = await ApiService.getSubscriptionStatus();
-      if (sub != null && sub['is_active'] != true) {
-        // محاولة تفعيل اشتراك اختبار
-        final activated = await ApiService.activateTestSubscription();
-        if (activated == null || activated['is_active'] != true) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(BodyTalkApp.tr(
-                context,
-                en: 'Subscription inactive. Please subscribe or try test activation.',
-                fr: 'Abonnement inactif. Veuillez vous abonner ou essayer l’activation de test.',
-                ar: 'الاشتراك غير مفعّل. الرجاء الاشتراك أو جرّب التفعيل التجريبي.',
-              )),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-          return;
-        }
-      }
-    }
-
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    if (!mounted) return;
-    setState(() => _loading = false);
-
+  void _openBodyAnalysis() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => BodyAnalysisPage(imageFile: _image!),
+        builder: (_) => const BodyAnalysisCapturePage(),
       ),
     );
   }
@@ -130,24 +71,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 children: [
                   _buildHeader(orange, blue),
                   const SizedBox(height: 22),
-                  _buildImageCard()
+                  _buildBodyAnalysisCard(orange, blue)
                       .animate()
                       .fadeIn(duration: 450.ms)
                       .slideY(begin: 0.08),
                   const SizedBox(height: 18),
-                  _buildHintCard()
+                  _buildTipCard()
                       .animate()
                       .fadeIn(duration: 450.ms, delay: 80.ms)
                       .slideY(begin: 0.08),
-                  const SizedBox(height: 18),
-                  _buildButtons(orange)
+                  const SizedBox(height: 22),
+                  _buildFoodAnalysisCard(orange)
                       .animate()
                       .fadeIn(duration: 450.ms, delay: 120.ms)
-                      .slideY(begin: 0.08),
-                  const SizedBox(height: 22),
-                  _buildUpcomingFoodCard(orange)
-                      .animate()
-                      .fadeIn(duration: 450.ms, delay: 160.ms)
                       .slideY(begin: 0.08),
                 ],
               ),
@@ -255,7 +191,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildImageCard() {
+  Widget _buildBodyAnalysisCard(Color orange, Color blue) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF020617),
@@ -269,59 +205,85 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(14),
-      child: _image != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Image.file(
-                _image!,
-                height: 260,
-                width: double.infinity,
-                fit: BoxFit.cover,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [blue, blue.withValues(alpha: 0.7)],
+                  ),
+                ),
+                child: const Icon(Icons.accessibility_new_rounded,
+                    color: Colors.white, size: 28),
               ),
-            )
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.photo_size_select_large_outlined,
-                  size: 70,
-                  color: Color(0xFF64748B),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      BodyTalkApp.tr(context,
+                          en: 'Body Analysis',
+                          fr: 'Analyse du Corps',
+                          ar: 'تحليل الجسم'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      BodyTalkApp.tr(context,
+                          en: 'Requires front + side photos',
+                          fr: 'Nécessite photos face + profil',
+                          ar: 'يتطلب صورة أمامية + جانبية'),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  BodyTalkApp.tr(
-                    context,
-                    en: 'No image yet',
-                    fr: 'Aucune image pour l’instant',
-                    ar: 'لا توجد صورة حتى الآن',
-                  ),
-                  style: const TextStyle(
-                    color: Color(0xFFE5E7EB),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _openBodyAnalysis,
+              icon: const Icon(Icons.analytics_rounded),
+              label: Text(
+                BodyTalkApp.tr(context,
+                    en: 'Start Body Analysis',
+                    fr: 'Démarrer l\'Analyse',
+                    ar: 'بدء تحليل الجسم'),
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  BodyTalkApp.tr(
-                    context,
-                    en: 'Pick a full front body image with good lighting for best analysis.',
-                    fr: 'Choisissez une image du corps de face avec une bonne luminosité pour une meilleure analyse.',
-                    ar: 'اختر صورة أمامية كاملة للجسم بإضاءة جيدة لتحليل أدق.',
-                  ),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.75),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+              ),
             ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildHintCard() {
+  Widget _buildTipCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -352,9 +314,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'نصيحة للحصول على تحليل أدق',
-                  style: TextStyle(
+                Text(
+                  BodyTalkApp.tr(context,
+                      en: 'Tip for better analysis',
+                      fr: 'Conseil pour une meilleure analyse',
+                      ar: 'نصيحة للحصول على تحليل أدق'),
+                  style: const TextStyle(
                     color: Color(0xFFF9FAFB),
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -362,7 +327,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'قف أمام الكاميرا بوضعية مستقيمة، وإضاءة جيدة، ويفضّل أن تكون الخلفية بسيطة بدون تشويش.',
+                  BodyTalkApp.tr(context,
+                      en: 'Stand straight with good lighting and a simple background for best results.',
+                      fr: 'Tenez-vous droit avec un bon éclairage et un fond simple pour de meilleurs résultats.',
+                      ar: 'قف بوضعية مستقيمة مع إضاءة جيدة وخلفية بسيطة للحصول على أفضل النتائج.'),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.80),
                     fontSize: 12,
@@ -377,60 +345,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildButtons(Color orange) {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(
-                color: Colors.white.withValues(alpha: 0.35),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            onPressed: _loading ? null : _pickImage,
-            icon: const Icon(Icons.photo_library_rounded),
-            label: const Text(
-              'اختر صورة للجسم',
-              style: TextStyle(fontSize: 15),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              backgroundColor: (_image == null || _loading)
-                  ? const Color(0xFF4B5563)
-                  : orange,
-              foregroundColor: Colors.white,
-              elevation: (_image == null || _loading) ? 0 : 4,
-              shadowColor: orange.withValues(alpha: 0.5),
-            ),
-            onPressed: (_image == null || _loading) ? null : _analyzeImage,
-            icon: const Icon(Icons.analytics_outlined),
-            label: Text(
-              _loading ? 'جاري التحضير للتحليل...' : 'ابدأ تحليل الجسم',
-              style: const TextStyle(fontSize: 15),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ⭐ كارد في الأسفل لميزة تحليل الأكل (مع زر تجريبي)
-  Widget _buildUpcomingFoodCard(Color orange) {
+  Widget _buildFoodAnalysisCard(Color orange) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -475,7 +390,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'تحليل الأكل من الصورة',
+                      BodyTalkApp.tr(context,
+                          en: 'Food Analysis',
+                          fr: 'Analyse Alimentaire',
+                          ar: 'تحليل الأكل من الصورة'),
                       style: GoogleFonts.tajawal(
                         color: Colors.white,
                         fontSize: 14,
@@ -484,7 +402,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'التعرّف على وجبتك من الصورة، وحساب السعرات والعناصر الغذائية باستخدام الذكاء الاصطناعي.',
+                      BodyTalkApp.tr(context,
+                          en: 'Identify your meal from photo, calculate calories and macros using AI.',
+                          fr: 'Identifiez votre repas, calculez calories et macros avec l\'IA.',
+                          ar: 'التعرّف على وجبتك من الصورة، وحساب السعرات والعناصر الغذائية باستخدام الذكاء الاصطناعي.'),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.82),
                         fontSize: 12,
@@ -512,9 +433,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 foregroundColor: orange,
               ),
               icon: const Icon(Icons.arrow_forward_ios_rounded, size: 15),
-              label: const Text(
-                'جرّب تحليل الأكل بالصور',
-                style: TextStyle(fontSize: 13),
+              label: Text(
+                BodyTalkApp.tr(context,
+                    en: 'Try Food Analysis',
+                    fr: 'Essayer l\'Analyse',
+                    ar: 'جرّب تحليل الأكل بالصور'),
+                style: const TextStyle(fontSize: 13),
               ),
             ),
           ),

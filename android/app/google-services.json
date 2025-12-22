@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "629431974850",
+    "project_id": "bodytalk-ai-6c750",
+    "storage_bucket": "bodytalk-ai-6c750.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:629431974850:android:813161eac3aa8436b5b45b",
+        "android_client_info": {
+          "package_name": "com.bodytalk.ai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "629431974850-686njvm03ggh5cb4j1sdfrq1k65blht8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bodytalk.ai",
+            "certificate_hash": "a6633c93358956399ecc06304449a907c2a08904"
+          }
+        },
+        {
+          "client_id": "629431974850-npuon8isrpd3gdefluahcv3tvvoefmbt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBc3JedCuwZ-u1JnMiwXX0QEMrej1jwvL8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "629431974850-npuon8isrpd3gdefluahcv3tvvoefmbt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

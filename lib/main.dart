@@ -46,6 +46,16 @@ class BodyTalkApp extends StatefulWidget {
     state?.setLocale(code);
   }
 
+  static void setThemeModeStatic(BuildContext context, bool isDark) {
+    final state = context.findAncestorStateOfType<_BodyTalkAppState>();
+    state?.setThemeMode(isDark);
+  }
+
+  static bool isDarkMode(BuildContext context) {
+    final state = context.findAncestorStateOfType<_BodyTalkAppState>();
+    return state?._themeMode == ThemeMode.dark;
+  }
+
   static String tr(BuildContext context,
       {required String en, required String fr, required String ar}) {
     final code = _getLocaleCode(context) ?? 'en';
@@ -60,10 +70,27 @@ class _BodyTalkAppState extends State<BodyTalkApp> {
   late String _localeCode;
   String get localeCode => _localeCode;
 
+  // Dark Mode support
+  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode get themeMode => _themeMode;
+
   @override
   void initState() {
     super.initState();
     _localeCode = widget.localeCode;
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDark = prefs.getBool('dark_mode') ?? true;
+    setState(() => _themeMode = isDark ? ThemeMode.dark : ThemeMode.light);
+  }
+
+  Future<void> setThemeMode(bool isDark) async {
+    setState(() => _themeMode = isDark ? ThemeMode.dark : ThemeMode.light);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dark_mode', isDark);
   }
 
   Future<void> setLocale(String code) async {
@@ -79,31 +106,65 @@ class _BodyTalkAppState extends State<BodyTalkApp> {
       brightness: Brightness.light,
     );
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'BodyTalk AI',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: colorScheme,
-        scaffoldBackgroundColor: const Color(0xFFF6F7FB),
-        textTheme: GoogleFonts.tajawalTextTheme(),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0B0F19), // أسود داكن
+    // Light theme
+    final lightTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: const Color(0xFFF6F7FB),
+      textTheme: GoogleFonts.tajawalTextTheme(),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF2563EB),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
           foregroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: false,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: const Color(0xFF2563EB), // أزرق
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
+          backgroundColor: const Color(0xFF2563EB),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
       ),
+    );
+
+    // Dark theme
+    final darkTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF2563EB),
+        brightness: Brightness.dark,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF020617),
+      textTheme: GoogleFonts.tajawalTextTheme(ThemeData.dark().textTheme),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF0B0F19),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.white,
+          backgroundColor: const Color(0xFF2563EB),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'BodyTalk AI',
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: _themeMode,
       locale: Locale(_localeCode),
       supportedLocales: const [
         Locale('en'),

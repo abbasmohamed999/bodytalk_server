@@ -370,6 +370,46 @@ class ApiService {
     }
   }
 
+  /// تحليل صورتين للجسم (أمامية + جانبية) – /analysis/body-two
+  static Future<Map<String, dynamic>?> analyzeBodyTwoImages(
+      File frontImage, File sideImage,
+      {String? language}) async {
+    final uri = Uri.parse('$_baseUrl/analysis/body-two');
+
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll(_headers(auth: true))
+      ..files.add(
+        await http.MultipartFile.fromPath('front_file', frontImage.path),
+      )
+      ..files.add(
+        await http.MultipartFile.fromPath('side_file', sideImage.path),
+      );
+
+    if (language != null) {
+      request.fields['language'] = language;
+    }
+
+    debugPrint('🌐 Body Two-Image Analysis Request: $uri');
+    debugPrint('🌍 Language: ${language ?? "not specified"}');
+
+    try {
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      debugPrint('📥 Body Two-Image Analysis Status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        debugPrint(
+            'analyzeBodyTwoImages failed: ${response.statusCode} ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('analyzeBodyTwoImages error: $e');
+      return null;
+    }
+  }
+
   /// تحليل صورة الأكل – /analysis/food
   static Future<Map<String, dynamic>?> analyzeFoodImage(File imageFile,
       {String? language, String? cuisine}) async {

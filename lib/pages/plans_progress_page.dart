@@ -158,11 +158,11 @@ class PlansProgressPage extends StatelessWidget {
                         SnackBar(
                           content: Text(BodyTalkApp.tr(
                             context,
-                            en: 'Workout plan details coming soon!',
-                            fr: 'Détails du plan d\'entraînement bientôt disponibles!',
-                            ar: 'تفاصيل خطة التمرين قريبًا!',
+                            en: 'Workout plan is active! Complete your daily exercises.',
+                            fr: 'Plan d\'entraînement actif! Complétez vos exercices quotidiens.',
+                            ar: 'خطة التمرين مفعّلة! أكمل تمارينك اليومية.',
                           )),
-                          backgroundColor: Colors.black87,
+                          backgroundColor: const Color(0xFF2563EB),
                         ),
                       );
                     },
@@ -187,11 +187,11 @@ class PlansProgressPage extends StatelessWidget {
                         SnackBar(
                           content: Text(BodyTalkApp.tr(
                             context,
-                            en: 'Meal plan details coming soon!',
-                            fr: 'Détails du plan de repas bientôt disponibles!',
-                            ar: 'تفاصيل خطة الوجبات قريبًا!',
+                            en: 'Meal plan is active! Follow your daily nutrition targets.',
+                            fr: 'Plan alimentaire actif! Suivez vos objectifs nutritionnels.',
+                            ar: 'الخطة الغذائية مفعّلة! اتبع أهدافك الغذائية اليومية.',
                           )),
-                          backgroundColor: Colors.black87,
+                          backgroundColor: const Color(0xFFFF8A00),
                         ),
                       );
                     },
