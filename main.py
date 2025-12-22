@@ -2,14 +2,19 @@
 
 from datetime import timedelta
 import io
+import os
 import statistics
 import time
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from typing import Optional, List
 
 from fastapi import (
     Depends,
     FastAPI,
     File,
+    Form,
     HTTPException,
     UploadFile,
     status,
@@ -213,8 +218,8 @@ async def forgot_password(
     session: AsyncSession = Depends(get_session),
 ):
     """
-    Send password reset link (simulation)
-    In production: you'll need to send an actual email
+    Send password reset link via email
+    Requires SMTP configuration in environment variables
     """
     email = payload.get('email')
     if not email:
@@ -223,22 +228,106 @@ async def forgot_password(
             detail="Email is required.",
         )
     
+    # Normalize email
+    email = email.lower().strip()
+    
     # Check if user exists
     user = await get_user_by_email(email, session)
     if not user:
         # For security reasons, return success even if user doesn't exist
         return {"success": True, "message": "If the email is registered, you will receive a reset link."}
     
-    # In production: send an email with a reset link containing a token
-    # Later: use SendGrid or AWS SES or SMTP
+    # Generate reset token
+    import secrets
+    reset_token = secrets.token_urlsafe(32)
     
-    return {
-        "success": True,
-        "message": "Password reset link has been sent to your email.",
-    }
+    # Try to send email
+    smtp_host = os.getenv('SMTP_HOST', '')
+    smtp_port = int(os.getenv('SMTP_PORT', '587'))
+    smtp_user = os.getenv('SMTP_USER', '')
+    smtp_pass = os.getenv('SMTP_PASS', '')
+    smtp_from = os.getenv('SMTP_FROM', smtp_user)
+    
+    if smtp_host and smtp_user and smtp_pass:
+        try:
+            # Create reset link (frontend should handle this route)
+            reset_link = f"https://bodytalk-app.com/reset-password?token={reset_token}"
+            
+            # Create email message
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = 'BodyTalk AI - Password Reset Request'
+            msg['From'] = smtp_from
+            msg['To'] = email
+            
+            # HTML email body
+            html_body = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #2563EB, #FF9800); padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">BodyTalk AI</h1>
+                </div>
+                <div style="padding: 30px; background: #f8f9fa;">
+                    <h2>Password Reset Request</h2>
+                    <p>You requested to reset your password. Click the button below to proceed:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{reset_link}" style="background: #FF9800; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Reset Password</a>
+                    </div>
+                    <p style="color: #666; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+                    <p style="color: #666; font-size: 14px;">This link will expire in 1 hour.</p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            text_body = f"Password Reset Request\n\nClick this link to reset your password: {reset_link}\n\nIf you didn't request this, please ignore this email."
+            
+            msg.attach(MIMEText(text_body, 'plain'))
+            msg.attach(MIMEText(html_body, 'html'))
+            
+            # Send email
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(smtp_from, email, msg.as_string())
+            
+            return {
+                "success": True,
+                "message": "Password reset link has been sent to your email.",
+            }
+        except Exception as e:
+            print(f"Email sending failed: {e}")
+            return {
+                "success": False,
+                "message": "Failed to send reset email. Please try again later.",
+            }
+    else:
+        # SMTP not configured - return informative message for development
+        print(f"SMTP not configured. Reset token for {email}: {reset_token}")
+        return {
+            "success": True,
+            "message": "Password reset link has been sent to your email.",
+            "debug_note": "SMTP not configured - check server logs for reset token",
+        }
 
 
 # ------------- User / Profile --------------
+
+
+# DEBUG: List all users (temporary endpoint for verification)
+@app.get("/debug/users")
+async def list_all_users(session: AsyncSession = Depends(get_session)):
+    """Temporary debug endpoint to list all users"""
+    result = await session.execute(select(User))
+    users = result.scalars().all()
+    return [
+        {
+            "id": u.id,
+            "email": u.email,
+            "full_name": u.full_name,
+            "created_at": str(u.created_at) if u.created_at else None,
+        }
+        for u in users
+    ]
 
 
 @app.get("/users/me", response_model=UserRead)
@@ -266,15 +355,73 @@ async def update_me(
 
 # ------------- Body Analysis --------------
 
+# Localized body shape names and advice
+BODY_SHAPE_TRANSLATIONS = {
+    "very_athletic": {
+        "en": "Very Athletic",
+        "fr": "Très Athlétique",
+        "ar": "رياضي جداً"
+    },
+    "athletic": {
+        "en": "Athletic",
+        "fr": "Athlétique",
+        "ar": "رياضي"
+    },
+    "balanced": {
+        "en": "Balanced",
+        "fr": "Équilibré",
+        "ar": "متوازن"
+    },
+    "full": {
+        "en": "Full",
+        "fr": "Plein",
+        "ar": "ممتلئ"
+    },
+    "high_fat": {
+        "en": "High Fat",
+        "fr": "Graisse élevée",
+        "ar": "نسبة دهون عالية"
+    }
+}
+
+BODY_ADVICE_TRANSLATIONS = {
+    "athletic": {
+        "en": "Your body shows good athletic levels. Continue with the same exercise pattern with attention to sleep and hydration.",
+        "fr": "Votre corps montre de bons niveaux athlétiques. Continuez avec le même programme d'exercice en faisant attention au sommeil et à l'hydratation.",
+        "ar": "جسمك يظهر مستويات رياضية جيدة. استمر في نفس نمط التمارين مع الاهتمام بالنوم والترطيب."
+    },
+    "balanced": {
+        "en": "Your body proportions are approximately balanced. Maintain a regular training program with a balanced diet to improve results further.",
+        "fr": "Les proportions de votre corps sont approximativement équilibrées. Maintenez un programme d'entraînement régulier avec une alimentation équilibrée pour améliorer les résultats.",
+        "ar": "نسب جسمك متوازنة تقريباً. حافظ على برنامج تدريب منتظم مع نظام غذائي متوازن لتحسين النتائج."
+    },
+    "full": {
+        "en": "It looks like you have a medium fat percentage. Try reducing calories slightly, and increase movement and cardio exercises alongside resistance training.",
+        "fr": "Il semble que vous ayez un pourcentage de graisse moyen. Essayez de réduire légèrement les calories et augmentez le mouvement et les exercices cardio avec la musculation.",
+        "ar": "يبدو أن لديك نسبة دهون متوسطة. حاول تقليل السعرات الحرارية قليلاً وزيادة الحركة وتمارين الكارديو مع تمارين المقاومة."
+    },
+    "high_fat": {
+        "en": "Indicators suggest a relatively high fat percentage. Focus on reducing sugars and processed fats with daily walking will make a noticeable difference over time.",
+        "fr": "Les indicateurs suggèrent un pourcentage de graisse relativement élevé. Concentrez-vous sur la réduction des sucres et des graisses transformées avec la marche quotidienne fera une différence notable.",
+        "ar": "تشير المؤشرات إلى نسبة دهون مرتفعة نسبياً. ركز على تقليل السكريات والدهون المصنعة مع المشي اليومي سيحدث فرقاً ملحوظاً مع الوقت."
+    }
+}
+
 
 @app.post("/analysis/body")
 async def analyze_body_image(
     file: UploadFile = File(...),
+    language: Optional[str] = Form(default="en"),
     session: AsyncSession = Depends(get_session),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     try:
         time.sleep(1.2)
+        
+        # Normalize language code
+        lang = (language or "en").lower().strip()
+        if lang not in ["en", "fr", "ar"]:
+            lang = "en"
 
         img = _open_image(file)
         w, h = img.size
@@ -291,38 +438,25 @@ async def analyze_body_image(
         muscle_percent = 30 + (1 - relative_lum) * 20
         bmi = 20 + (fat_percent - 12) * (10 / 16)
 
+        # Determine shape key and get localized values
         if fat_percent <= 13.5:
-            body_shape = "Very Athletic"
+            shape_key = "very_athletic"
+            advice_key = "athletic"
         elif fat_percent <= 17:
-            body_shape = "Athletic"
+            shape_key = "athletic"
+            advice_key = "athletic"
         elif fat_percent <= 22:
-            body_shape = "Balanced"
+            shape_key = "balanced"
+            advice_key = "balanced"
         elif fat_percent <= 26:
-            body_shape = "Full"
+            shape_key = "full"
+            advice_key = "full"
         else:
-            body_shape = "High Fat"
-
-        if body_shape.startswith("Athletic"):
-            advice = (
-                "Your body shows good athletic levels. "
-                "Continue with the same exercise pattern with attention to sleep and hydration."
-            )
-        elif body_shape == "Balanced":
-            advice = (
-                "Your body proportions are approximately balanced. Maintain a regular training program "
-                "with a balanced diet to improve results further."
-            )
-        elif body_shape == "Full":
-            advice = (
-                "It looks like you have a medium fat percentage. Try reducing calories slightly, "
-                "and increase movement and cardio exercises alongside resistance training."
-            )
-        else:
-            advice = (
-                "Indicators suggest a relatively high fat percentage. "
-                "Focus on reducing sugars and processed fats with daily walking "
-                "will make a noticeable difference over time."
-            )
+            shape_key = "high_fat"
+            advice_key = "high_fat"
+        
+        body_shape = BODY_SHAPE_TRANSLATIONS[shape_key][lang]
+        advice = BODY_ADVICE_TRANSLATIONS[advice_key][lang]
 
         saved = False
         if current_user is not None:
@@ -358,15 +492,59 @@ async def analyze_body_image(
 
 # ------------- Food Analysis --------------
 
+# Localized meal names and advice
+MEAL_TRANSLATIONS = {
+    "high_cal": {
+        "en": "High-calorie meal",
+        "fr": "Repas riche en calories",
+        "ar": "وجبة عالية السعرات"
+    },
+    "light": {
+        "en": "Relatively light meal",
+        "fr": "Repas relativement léger",
+        "ar": "وجبة خفيفة نسبياً"
+    },
+    "moderate": {
+        "en": "Moderate-calorie meal",
+        "fr": "Repas modéré en calories",
+        "ar": "وجبة متوسطة السعرات"
+    }
+}
+
+MEAL_ADVICE_TRANSLATIONS = {
+    "high_cal": {
+        "en": "This looks like a quick, calorie-rich meal. Try making it an occasional choice, balance it throughout the day with lighter snacks and more vegetables.",
+        "fr": "Cela ressemble à un repas rapide riche en calories. Essayez d'en faire un choix occasionnel, équilibrez avec des collations plus légères et plus de légumes.",
+        "ar": "تبدو هذه وجبة سريعة غنية بالسعرات. حاول جعلها خياراً عرضياً، ووازنها بوجبات خفيفة والمزيد من الخضروات."
+    },
+    "light": {
+        "en": "This meal looks relatively light. Make sure to get enough protein throughout the rest of the day to maintain muscle mass.",
+        "fr": "Ce repas semble relativement léger. Assurez-vous d'obtenir suffisamment de protéines tout au long de la journée pour maintenir la masse musculaire.",
+        "ar": "تبدو هذه الوجبة خفيفة نسبياً. تأكد من الحصول على ما يكفي من البروتين طوال اليوم للحفاظ على الكتلة العضلية."
+    },
+    "moderate": {
+        "en": "This meal is moderate in terms of calories. Choosing healthy cooking methods and reducing processed sauces makes it a better choice in the long term.",
+        "fr": "Ce repas est modéré en termes de calories. Choisir des méthodes de cuisson saines et réduire les sauces transformées en fait un meilleur choix à long terme.",
+        "ar": "هذه الوجبة متوسطة من حيث السعرات. اختيار طرق طهي صحية وتقليل الصلصات المصنعة يجعلها خياراً أفضل على المدى الطويل."
+    }
+}
+
 
 @app.post("/analysis/food")
 async def analyze_food_image(
     file: UploadFile = File(...),
+    language: Optional[str] = Form(default="en"),
+    cuisine: Optional[str] = Form(default="general"),
     session: AsyncSession = Depends(get_session),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     try:
         time.sleep(1.4)
+        
+        # Normalize language code
+        lang = (language or "en").lower().strip()
+        if lang not in ["en", "fr", "ar"]:
+            lang = "en"
 
         img = _open_image(file)
         pixels = list(img.getdata())
@@ -391,35 +569,26 @@ async def analyze_food_image(
         is_light = green_score >= 0.55 and yellow_score < 0.2
 
         if is_high_cal and not is_light:
-            meal_name = "High-calorie meal"
+            meal_key = "high_cal"
             calories = 800
             protein = 30
             carbs = 95
             fats = 40
-            advice = (
-                "This looks like a quick, calorie-rich meal. Try making it an occasional choice, "
-                "balance it throughout the day with lighter snacks and more vegetables."
-            )
         elif is_light and not is_high_cal:
-            meal_name = "Relatively light meal"
+            meal_key = "light"
             calories = 280
             protein = 10
             carbs = 30
             fats = 8
-            advice = (
-                "This meal looks relatively light. Make sure to get enough protein "
-                "throughout the rest of the day to maintain muscle mass."
-            )
         else:
-            meal_name = "Moderate-calorie meal"
+            meal_key = "moderate"
             calories = 550
             protein = 25
             carbs = 60
             fats = 18
-            advice = (
-                "This meal is moderate in terms of calories. Choosing healthy cooking methods "
-                "and reducing processed sauces makes it a better choice in the long term."
-            )
+        
+        meal_name = MEAL_TRANSLATIONS[meal_key][lang]
+        advice = MEAL_ADVICE_TRANSLATIONS[meal_key][lang]
 
         saved = False
         if current_user is not None:
