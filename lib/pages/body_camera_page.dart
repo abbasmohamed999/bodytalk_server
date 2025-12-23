@@ -1,13 +1,15 @@
 // lib/pages/body_camera_page.dart
-// Phase C2: Camera Page with Real-Time Overlay Guidance
-// Privacy-Safe: NO FACE DETECTION
+// Phase C2.1: Camera Page with LIVE Pose Detection and Strict Gating
+// Privacy-Safe: NO FACE REQUIRED - uses shoulders, hips, knees, ankles only
 
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:camera/camera.dart';
 import 'package:bodytalk_app/main.dart';
 import 'package:bodytalk_app/widgets/body_capture_overlay.dart';
+import 'package:bodytalk_app/services/live_pose_validator.dart';
 
 class BodyCameraPage extends StatefulWidget {
   final bool isFrontMode; // true = front pose, false = side pose
@@ -25,12 +27,16 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
   bool _isInitialized = false;
-  bool _isAligned = false;
+  LiveValidationState _validationState = LiveValidationState.NO_PERSON;
   String? _guidanceText;
+  LivePoseValidator? _poseValidator;
+  Timer? _validationTimer;
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
+    _poseValidator = LivePoseValidator(isFrontMode: widget.isFrontMode);
     _initializeCamera();
   }
 
@@ -64,7 +70,13 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
       if (mounted) {
         setState(() {
           _isInitialized = true;
-          _updateGuidanceText();
+        });
+
+        // Start image stream for live pose detection
+        _controller!.startImageStream((CameraImage image) {
+          if (!_isProcessing) {
+            _processFrameForValidation(image);
+          }
         });
       }
     } catch (e) {
@@ -77,31 +89,90 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
     }
   }
 
-  void _updateGuidanceText() {
-    // Simulate alignment check (in real app, would use ML Kit pose detection)
-    // For now, show helpful static guidance
-    if (mounted) {
-      setState(() {
-        _guidanceText = BodyTalkApp.tr(context,
-            en: 'Step back to show full body (shoulders to feet)',
-            fr: 'Reculez pour montrer tout le corps (épaules aux pieds)',
-            ar: 'اتراجع للخلف لإظهار الجسم بالكامل (من الكتفين للقدمين)');
-        _isAligned = false;
-      });
-    }
+  Future<void> _processFrameForValidation(CameraImage image) async {
+    _isProcessing = true;
+    try {
+      final result = await _poseValidator!.validateFrame(image);
 
-    // Simulate alignment detection after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
-          _guidanceText = BodyTalkApp.tr(context,
-              en: 'Perfect! Align body with silhouette',
-              fr: 'Parfait ! Alignez le corps avec la silhouette',
-              ar: 'ممتاز! وازن جسمك مع الصورة الظلية');
-          _isAligned = true;
+          _validationState = result.state;
+          _guidanceText = _getLocalizedGuidance(result.guidanceKey);
         });
       }
-    });
+    } catch (e) {
+      // Silently handle errors during live detection
+    } finally {
+      // Add delay to throttle to ~3-5 FPS
+      await Future.delayed(const Duration(milliseconds: 250));
+      _isProcessing = false;
+    }
+  }
+
+  String _getLocalizedGuidance(String key) {
+    switch (key) {
+      case 'no_person_detected':
+      case 'step_into_frame':
+        return BodyTalkApp.tr(context,
+            en: 'Step into frame',
+            fr: 'Entrez dans le cadre',
+            ar: 'ادخل إلى الإطار');
+      case 'multiple_persons_detected':
+        return BodyTalkApp.tr(context,
+            en: 'Only one person allowed',
+            fr: 'Une seule personne autorisée',
+            ar: 'شخص واحد فقط مسموح');
+      case 'show_shoulders':
+        return BodyTalkApp.tr(context,
+            en: 'Show both shoulders',
+            fr: 'Montrez les deux épaules',
+            ar: 'أظهر كلا الكتفين');
+      case 'show_full_body_hips':
+        return BodyTalkApp.tr(context,
+            en: 'Show full body including hips',
+            fr: 'Montrez tout le corps y compris les hanches',
+            ar: 'أظهر الجسم كاملاً بما في ذلك الوركين');
+      case 'show_legs':
+        return BodyTalkApp.tr(context,
+            en: 'Show legs and knees',
+            fr: 'Montrez les jambes et les genoux',
+            ar: 'أظهر الساقين والركبتين');
+      case 'show_feet':
+        return BodyTalkApp.tr(context,
+            en: 'Show feet - full body required',
+            fr: 'Montrez les pieds - corps entier requis',
+            ar: 'أظهر القدمين - الجسم الكامل مطلوب');
+      case 'step_closer_full_body':
+        return BodyTalkApp.tr(context,
+            en: 'Step closer - body too small',
+            fr: 'Approchez-vous - corps trop petit',
+            ar: 'اقترب - الجسم صغير جداً');
+      case 'step_back_full_body':
+        return BodyTalkApp.tr(context,
+            en: 'Step back - show full body',
+            fr: 'Reculez - montrez tout le corps',
+            ar: 'ابتعد - أظهر الجسم كاملاً');
+      case 'face_camera_directly':
+        return BodyTalkApp.tr(context,
+            en: 'Face camera directly',
+            fr: 'Faites face à la caméra',
+            ar: 'واجه الكاميرا مباشرة');
+      case 'turn_sideways_90':
+        return BodyTalkApp.tr(context,
+            en: 'Turn sideways 90°',
+            fr: 'Tournez-vous de 90°',
+            ar: 'استدر 90 درجة');
+      case 'ready_to_capture':
+        return BodyTalkApp.tr(context,
+            en: 'Ready! Tap to capture',
+            fr: 'Prêt ! Appuyez pour capturer',
+            ar: 'جاهز! اضغط للالتقاط');
+      default:
+        return BodyTalkApp.tr(context,
+            en: 'Position your body',
+            fr: 'Positionnez votre corps',
+            ar: 'ضع جسمك في الموضع');
+    }
   }
 
   Future<void> _capturePhoto() async {
@@ -110,6 +181,9 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
     }
 
     try {
+      // Stop image stream before capturing
+      await _controller!.stopImageStream();
+
       final image = await _controller!.takePicture();
       if (mounted) {
         Navigator.pop(context, File(image.path));
@@ -123,19 +197,27 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
             backgroundColor: Colors.red,
           ),
         );
+        // Restart image stream
+        _controller!.startImageStream((image) {
+          if (!_isProcessing) {
+            _processFrameForValidation(image);
+          }
+        });
       }
     }
   }
 
   @override
   void dispose() {
+    _controller?.stopImageStream();
+    _validationTimer?.cancel();
+    _poseValidator?.dispose();
     _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    const deepBlue = Color(0xFF020617);
     const primaryBlue = Color(0xFF2563EB);
 
     return Scaffold(
@@ -163,7 +245,7 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
               Positioned.fill(
                 child: BodyCaptureOverlay(
                   isFrontMode: widget.isFrontMode,
-                  isAligned: _isAligned,
+                  validationState: _validationState,
                   guidanceText: _guidanceText,
                 ),
               ),
@@ -196,17 +278,19 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
               right: 0,
               child: Center(
                 child: GestureDetector(
-                  onTap: _isAligned ? _capturePhoto : null,
+                  onTap: _validationState == LiveValidationState.OK_READY
+                      ? _capturePhoto
+                      : null,
                   child: Container(
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _isAligned
+                      color: _validationState == LiveValidationState.OK_READY
                           ? Colors.white
                           : Colors.white.withValues(alpha: 0.3),
                       border: Border.all(
-                        color: _isAligned
+                        color: _validationState == LiveValidationState.OK_READY
                             ? Colors.green
                             : Colors.white.withValues(alpha: 0.5),
                         width: 4,
@@ -222,7 +306,9 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
                     child: Icon(
                       Icons.camera_alt,
                       size: 40,
-                      color: _isAligned ? primaryBlue : Colors.white54,
+                      color: _validationState == LiveValidationState.OK_READY
+                          ? primaryBlue
+                          : Colors.white54,
                     ),
                   ),
                 ),
@@ -230,16 +316,16 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
             ),
 
             // Capture hint
-            if (!_isAligned)
+            if (_validationState != LiveValidationState.OK_READY)
               Positioned(
                 bottom: 130,
                 left: 0,
                 right: 0,
                 child: Text(
                   BodyTalkApp.tr(context,
-                      en: 'Align body first to enable capture',
-                      fr: 'Alignez le corps pour activer la capture',
-                      ar: 'وازن الجسم أولاً لتفعيل الالتقاط'),
+                      en: 'Align full body to enable capture',
+                      fr: 'Alignez le corps entier pour activer',
+                      ar: 'وازن الجسم كاملاً لتفعيل الالتقاط'),
                   style: GoogleFonts.tajawal(
                     color: Colors.white70,
                     fontSize: 12,

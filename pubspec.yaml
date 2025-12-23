@@ -3,7 +3,7 @@ description: "A Flutter project for AI body analysis"
 
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.5+5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -43,3 +43,4 @@ flutter:
     - assets/images/onb1.png
     - assets/images/onb2.png
     - assets/images/onb3.png
+    - assets/overlays/

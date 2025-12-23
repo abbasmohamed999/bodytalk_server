@@ -1,23 +1,24 @@
 // lib/widgets/body_capture_overlay.dart
-// Phase C2: Camera Overlay Guidance for Body Analysis
+// Phase C2.1: Camera Overlay Guidance with Live Pose Detection
 // Privacy-Safe: NO FACE DETECTION, NO FACE REQUIRED
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:bodytalk_app/main.dart';
+import 'package:bodytalk_app/services/live_pose_validator.dart';
 
 /// Camera overlay widget that guides users to align their body correctly
 /// Shows different silhouettes for FRONT and SIDE poses
 /// Privacy-safe: Only shows shoulders, hips, legs - NO FACE
 class BodyCaptureOverlay extends StatelessWidget {
   final bool isFrontMode; // true = front pose, false = side pose
-  final bool isAligned; // Whether body is properly aligned in overlay
+  final LiveValidationState validationState; // Live validation state
   final String? guidanceText; // Real-time guidance message
 
   const BodyCaptureOverlay({
     super.key,
     required this.isFrontMode,
-    this.isAligned = false,
+    this.validationState = LiveValidationState.NO_PERSON,
     this.guidanceText,
   });
 
@@ -39,7 +40,7 @@ class BodyCaptureOverlay extends StatelessWidget {
             ),
             painter: _BodySilhouettePainter(
               isFrontMode: isFrontMode,
-              isAligned: isAligned,
+              validationState: validationState,
             ),
           ),
         ),
@@ -127,10 +128,11 @@ class BodyCaptureOverlay extends StatelessWidget {
   }
 
   Widget _buildGuidanceText(BuildContext context) {
+    final isReady = validationState == LiveValidationState.OK_READY;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: isAligned
+        color: isReady
             ? Colors.green.withValues(alpha: 0.9)
             : Colors.orange.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
@@ -145,7 +147,7 @@ class BodyCaptureOverlay extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            isAligned ? Icons.check_circle : Icons.info_outline,
+            isReady ? Icons.check_circle : Icons.info_outline,
             color: Colors.white,
             size: 22,
           ),
@@ -241,17 +243,18 @@ class BodyCaptureOverlay extends StatelessWidget {
 /// Privacy-safe: NO FACE - only shoulders, torso, hips, legs
 class _BodySilhouettePainter extends CustomPainter {
   final bool isFrontMode;
-  final bool isAligned;
+  final LiveValidationState validationState;
 
   _BodySilhouettePainter({
     required this.isFrontMode,
-    required this.isAligned,
+    required this.validationState,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    final isReady = validationState == LiveValidationState.OK_READY;
     final paint = Paint()
-      ..color = isAligned
+      ..color = isReady
           ? Colors.green.withValues(alpha: 0.3)
           : Colors.white.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
@@ -386,6 +389,6 @@ class _BodySilhouettePainter extends CustomPainter {
   @override
   bool shouldRepaint(_BodySilhouettePainter oldDelegate) {
     return oldDelegate.isFrontMode != isFrontMode ||
-        oldDelegate.isAligned != isAligned;
+        oldDelegate.validationState != validationState;
   }
 }
