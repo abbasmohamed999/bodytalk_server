@@ -132,9 +132,9 @@ class PoseValidationService {
       const minConfidence = 0.5;
 
       // RULE 1: SHOULDERS must be visible
-      final shouldersVisible =
-          (leftShoulder != null && leftShoulder.likelihood > minConfidence) ||
-              (rightShoulder != null && rightShoulder.likelihood > minConfidence);
+      final shouldersVisible = (leftShoulder != null &&
+              leftShoulder.likelihood > minConfidence) ||
+          (rightShoulder != null && rightShoulder.likelihood > minConfidence);
 
       if (!shouldersVisible) {
         return PoseValidationResult.invalid(
@@ -192,18 +192,20 @@ class PoseValidationService {
       // RULE 6: Check body cropping - ensure full body is in frame
       // If ankles are too low confidence while rest is good, body might be cropped
       final avgUpperConfidence = [
-        if (leftShoulder != null) leftShoulder.likelihood,
-        if (rightShoulder != null) rightShoulder.likelihood,
-        if (leftHip != null) leftHip.likelihood,
-        if (rightHip != null) rightHip.likelihood,
-      ].fold(0.0, (a, b) => a + b) / 4;
+            if (leftShoulder != null) leftShoulder.likelihood,
+            if (rightShoulder != null) rightShoulder.likelihood,
+            if (leftHip != null) leftHip.likelihood,
+            if (rightHip != null) rightHip.likelihood,
+          ].fold(0.0, (a, b) => a + b) /
+          4;
 
       final avgLowerConfidence = [
-        if (leftKnee != null) leftKnee.likelihood,
-        if (rightKnee != null) rightKnee.likelihood,
-        if (leftAnkle != null) leftAnkle.likelihood,
-        if (rightAnkle != null) rightAnkle.likelihood,
-      ].fold(0.0, (a, b) => a + b) / 4;
+            if (leftKnee != null) leftKnee.likelihood,
+            if (rightKnee != null) rightKnee.likelihood,
+            if (leftAnkle != null) leftAnkle.likelihood,
+            if (rightAnkle != null) rightAnkle.likelihood,
+          ].fold(0.0, (a, b) => a + b) /
+          4;
 
       // If upper body is detected well but lower body is poor, likely cropped
       if (avgUpperConfidence > 0.7 && avgLowerConfidence < 0.3) {
@@ -308,29 +310,26 @@ class PoseValidationService {
         'en': 'Multiple people detected. Only one person allowed per photo.',
         'fr':
             'Plusieurs personnes détectées. Une seule personne autorisée par photo.',
-        'ar':
-            'تم اكتشاف عدة أشخاص. يسمح بشخص واحد فقط في كل صورة.',
+        'ar': 'تم اكتشاف عدة أشخاص. يسمح بشخص واحد فقط في كل صورة.',
       },
       'shoulders_not_detected': {
-        'en': 'Shoulders not detected. Please ensure your shoulders are visible.',
+        'en':
+            'Shoulders not detected. Please ensure your shoulders are visible.',
         'fr':
             'Épaules non détectées. Assurez-vous que vos épaules sont visibles.',
-        'ar':
-            'لم يتم اكتشاف الكتفين. تأكد من ظهور كتفيك.',
+        'ar': 'لم يتم اكتشاف الكتفين. تأكد من ظهور كتفيك.',
       },
       'hips_not_detected': {
         'en': 'Hips not detected. Please ensure your torso is fully visible.',
         'fr':
             'Hanches non détectées. Assurez-vous que votre torse est entièrement visible.',
-        'ar':
-            'لم يتم اكتشاف الوركين. تأكد من ظهور جذعك بالكامل.',
+        'ar': 'لم يتم اكتشاف الوركين. تأكد من ظهور جذعك بالكامل.',
       },
       'knees_not_detected': {
         'en': 'Knees not detected. Please step back to show your full body.',
         'fr':
             'Genoux non détectés. Veuillez reculer pour montrer tout votre corps.',
-        'ar':
-            'لم يتم اكتشاف الركبتين. اتراجع للخلف لإظهار جسمك بالكامل.',
+        'ar': 'لم يتم اكتشاف الركبتين. اتراجع للخلف لإظهار جسمك بالكامل.',
       },
       'ankles_not_detected': {
         'en':
@@ -341,44 +340,36 @@ class PoseValidationService {
             'القدمين غير ظاهرتين. اتراجع للخلف حتى يظهر جسمك بالكامل (من الكتفين إلى القدمين).',
       },
       'torso_incomplete': {
-        'en':
-            'Your torso is not fully visible. Please adjust your position.',
+        'en': 'Your torso is not fully visible. Please adjust your position.',
         'fr':
             'Votre torse n\'est pas entièrement visible. Veuillez ajuster votre position.',
-        'ar':
-            'جذعك غير ظاهر بالكامل. يرجى تعديل وضعيتك.',
+        'ar': 'جذعك غير ظاهر بالكامل. يرجى تعديل وضعيتك.',
       },
       'body_cropped_lower': {
         'en':
             'Lower body appears cropped. Please step back to include your feet.',
         'fr':
             'Le bas du corps semble coupé. Veuillez reculer pour inclure vos pieds.',
-        'ar':
-            'يبدو الجزء السفلي من الجسم مقطوعاً. تراجع للخلف لتضمين قدميك.',
+        'ar': 'يبدو الجزء السفلي من الجسم مقطوعاً. تراجع للخلف لتضمين قدميك.',
       },
       'turn_for_side_photo': {
-        'en':
-            'Side photo required: Please turn 90° to show your profile.',
+        'en': 'Side photo required: Please turn 90° to show your profile.',
         'fr':
             'Photo de profil requise : Veuillez tourner de 90° pour montrer votre profil.',
-        'ar':
-            'صورة جانبية مطلوبة: يرجى الاستدارة 90° لإظهار ملفك الشخصي.',
+        'ar': 'صورة جانبية مطلوبة: يرجى الاستدارة 90° لإظهار ملفك الشخصي.',
       },
       'face_camera_front': {
-        'en':
-            'Front photo required: Please face the camera directly.',
+        'en': 'Front photo required: Please face the camera directly.',
         'fr':
             'Photo de face requise : Veuillez faire face à la caméra directement.',
-        'ar':
-            'صورة أمامية مطلوبة: يرجى مواجهة الكاميرا مباشرة.',
+        'ar': 'صورة أمامية مطلوبة: يرجى مواجهة الكاميرا مباشرة.',
       },
       'validation_error': {
         'en':
             'Unable to validate photo. Please try again with better lighting.',
         'fr':
             'Impossible de valider la photo. Veuillez réessayer avec un meilleur éclairage.',
-        'ar':
-            'تعذر التحقق من الصورة. يرجى المحاولة مرة أخرى مع إضاءة أفضل.',
+        'ar': 'تعذر التحقق من الصورة. يرجى المحاولة مرة أخرى مع إضاءة أفضل.',
       },
     };
 

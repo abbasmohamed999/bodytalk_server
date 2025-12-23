@@ -1,5 +1,3 @@
-// lib/pages/body_analysis_capture_page.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -8,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:bodytalk_app/main.dart';
 import 'package:bodytalk_app/services/api_service.dart';
 import 'package:bodytalk_app/services/pose_validation_service.dart';
+import 'package:bodytalk_app/pages/body_camera_page.dart';
 
 class BodyAnalysisCapturePage extends StatefulWidget {
   const BodyAnalysisCapturePage({super.key});
@@ -34,41 +33,58 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
 
   Future<void> _pickFrontImage(ImageSource source) async {
     try {
-      final picked = await _picker.pickImage(source: source, imageQuality: 85);
-      if (picked != null && mounted) {
-        final file = File(picked.path);
+      File? file;
 
-        // Validate the photo
-        setState(() => _validatingFront = true);
-        final validation = await _poseService.validateBodyPhoto(
-          file,
-          expectSidePose: false,
+      if (source == ImageSource.camera) {
+        // Use guided camera for front pose
+        final capturedFile = await Navigator.push<File>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const BodyCameraPage(isFrontMode: true),
+          ),
         );
-
-        if (!mounted) return;
-        setState(() => _validatingFront = false);
-
-        if (!validation.isValid) {
-          final lang = BodyTalkApp.getLocaleCode(context) ?? 'en';
-          final errorMsg = PoseValidationService.getLocalizedError(
-            validation.errorMessageKey!,
-            lang,
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMsg),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-          return;
-        }
-
-        setState(() {
-          _frontImage = file;
-          _result = null;
-        });
+        if (capturedFile == null) return;
+        file = capturedFile;
+      } else {
+        // Use image picker for gallery
+        final picked =
+            await _picker.pickImage(source: source, imageQuality: 85);
+        if (picked == null) return;
+        file = File(picked.path);
       }
+
+      if (!mounted) return;
+
+      // Validate the photo with ML Kit (C1 validation)
+      setState(() => _validatingFront = true);
+      final validation = await _poseService.validateBodyPhoto(
+        file,
+        expectSidePose: false,
+      );
+
+      if (!mounted) return;
+      setState(() => _validatingFront = false);
+
+      if (!validation.isValid) {
+        final lang = BodyTalkApp.getLocaleCode(context) ?? 'en';
+        final errorMsg = PoseValidationService.getLocalizedError(
+          validation.errorMessageKey!,
+          lang,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _frontImage = file;
+        _result = null;
+      });
     } catch (e) {
       debugPrint('Error picking front image: $e');
       if (mounted) setState(() => _validatingFront = false);
@@ -77,41 +93,58 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
 
   Future<void> _pickSideImage(ImageSource source) async {
     try {
-      final picked = await _picker.pickImage(source: source, imageQuality: 85);
-      if (picked != null && mounted) {
-        final file = File(picked.path);
+      File? file;
 
-        // Validate the photo
-        setState(() => _validatingSide = true);
-        final validation = await _poseService.validateBodyPhoto(
-          file,
-          expectSidePose: true,
+      if (source == ImageSource.camera) {
+        // Use guided camera for side pose
+        final capturedFile = await Navigator.push<File>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const BodyCameraPage(isFrontMode: false),
+          ),
         );
-
-        if (!mounted) return;
-        setState(() => _validatingSide = false);
-
-        if (!validation.isValid) {
-          final lang = BodyTalkApp.getLocaleCode(context) ?? 'en';
-          final errorMsg = PoseValidationService.getLocalizedError(
-            validation.errorMessageKey!,
-            lang,
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMsg),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-          return;
-        }
-
-        setState(() {
-          _sideImage = file;
-          _result = null;
-        });
+        if (capturedFile == null) return;
+        file = capturedFile;
+      } else {
+        // Use image picker for gallery
+        final picked =
+            await _picker.pickImage(source: source, imageQuality: 85);
+        if (picked == null) return;
+        file = File(picked.path);
       }
+
+      if (!mounted) return;
+
+      // Validate the photo with ML Kit (C1 validation)
+      setState(() => _validatingSide = true);
+      final validation = await _poseService.validateBodyPhoto(
+        file,
+        expectSidePose: true,
+      );
+
+      if (!mounted) return;
+      setState(() => _validatingSide = false);
+
+      if (!validation.isValid) {
+        final lang = BodyTalkApp.getLocaleCode(context) ?? 'en';
+        final errorMsg = PoseValidationService.getLocalizedError(
+          validation.errorMessageKey!,
+          lang,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _sideImage = file;
+        _result = null;
+      });
     } catch (e) {
       debugPrint('Error picking side image: $e');
       if (mounted) setState(() => _validatingSide = false);
@@ -354,12 +387,9 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
               const SizedBox(height: 8),
               Text(
                 BodyTalkApp.tr(context,
-                    en:
-                        'Full body required: shoulders, hips, knees, and feet visible. Face NOT required (privacy-safe). Good lighting, simple background, fitted clothing.',
-                    fr:
-                        'Corps entier requis : épaules, hanches, genoux et pieds visibles. Visage NON requis (respect de la vie privée). Bon éclairage, fond simple, vêtements ajustés.',
-                    ar:
-                        'جسم كامل مطلوب: كتفين، وركين، ركبتين وقدمين ظاهرة. الوجه غير مطلوب (حفظ الخصوصية). إضاءة جيدة، خلفية بسيطة، ملابس محددة.'),
+                    en: 'Full body required: shoulders, hips, knees, and feet visible. Face NOT required (privacy-safe). Good lighting, simple background, fitted clothing.',
+                    fr: 'Corps entier requis : épaules, hanches, genoux et pieds visibles. Visage NON requis (respect de la vie privée). Bon éclairage, fond simple, vêtements ajustés.',
+                    ar: 'جسم كامل مطلوب: كتفين، وركين، ركبتين وقدمين ظاهرة. الوجه غير مطلوب (حفظ الخصوصية). إضاءة جيدة، خلفية بسيطة، ملابس محددة.'),
                 style: GoogleFonts.tajawal(
                   color: Colors.white70,
                   fontSize: 12,
@@ -456,9 +486,7 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
                             const SizedBox(height: 6),
                             Text(
                               BodyTalkApp.tr(context,
-                                  en: 'Required',
-                                  fr: 'Requis',
-                                  ar: 'مطلوب'),
+                                  en: 'Required', fr: 'Requis', ar: 'مطلوب'),
                               style: GoogleFonts.tajawal(
                                 color: Colors.white38,
                                 fontSize: 11,
