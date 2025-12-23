@@ -7,6 +7,7 @@ import 'package:bodytalk_app/pages/login_page.dart';
 import 'package:bodytalk_app/services/api_service.dart';
 import 'package:bodytalk_app/services/face_auth_service.dart';
 import 'package:bodytalk_app/main.dart';
+import 'package:bodytalk_app/build_info.dart';
 
 class ProfilePage extends StatefulWidget {
   static const routeName = '/profile';
@@ -813,6 +814,32 @@ class _ProfilePageState extends State<ProfilePage> {
           child,
         ],
       ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 11,
+              fontFamily: 'monospace',
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1735,6 +1762,62 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      // Build Info Section
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.build_circle_outlined,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  BodyTalkApp.tr(context,
+                                      en: 'Build Info',
+                                      fr: 'Info de build',
+                                      ar: 'معلومات البناء'),
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            _buildInfoRow(
+                              BodyTalkApp.tr(context,
+                                  en: 'Commit:', fr: 'Commit:', ar: 'الكوميت:'),
+                              BuildInfo.gitCommit,
+                            ),
+                            const SizedBox(height: 4),
+                            _buildInfoRow(
+                              BodyTalkApp.tr(context,
+                                  en: 'Built:', fr: 'Construit:', ar: 'تاريخ البناء:'),
+                              BuildInfo.buildTime,
+                            ),
+                            const SizedBox(height: 4),
+                            _buildInfoRow(
+                              BodyTalkApp.tr(context,
+                                  en: 'Version:', fr: 'Version:', ar: 'الإصدار:'),
+                              BuildInfo.appVersion,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           TextButton(
@@ -1781,7 +1864,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           const Spacer(),
                           Text(
-                            'v1.0.0',
+                            'v${BuildInfo.appVersion}',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 11,
