@@ -354,9 +354,12 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
               const SizedBox(height: 8),
               Text(
                 BodyTalkApp.tr(context,
-                    en: 'Stand straight with good lighting, simple background, and wear fitted clothing for accurate analysis.',
-                    fr: 'Tenez-vous droit avec un bon éclairage, un fond simple, et portez des vêtements ajustés pour une analyse précise.',
-                    ar: 'قف بوضعية مستقيمة مع إضاءة جيدة وخلفية بسيطة وارتدِ ملابس محددة للحصول على تحليل دقيق.'),
+                    en:
+                        'Full body required: shoulders, hips, knees, and feet visible. Face NOT required (privacy-safe). Good lighting, simple background, fitted clothing.',
+                    fr:
+                        'Corps entier requis : épaules, hanches, genoux et pieds visibles. Visage NON requis (respect de la vie privée). Bon éclairage, fond simple, vêtements ajustés.',
+                    ar:
+                        'جسم كامل مطلوب: كتفين، وركين، ركبتين وقدمين ظاهرة. الوجه غير مطلوب (حفظ الخصوصية). إضاءة جيدة، خلفية بسيطة، ملابس محددة.'),
                 style: GoogleFonts.tajawal(
                   color: Colors.white70,
                   fontSize: 12,
@@ -378,27 +381,40 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
     required Color primaryBlue,
     bool isValidating = false,
   }) {
+    final isValid = image != null;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: image != null
-              ? Colors.green.withValues(alpha: 0.5)
+          color: isValid
+              ? Colors.green.withValues(alpha: 0.6)
               : Colors.white.withValues(alpha: 0.12),
-          width: image != null ? 2 : 1,
+          width: isValid ? 2.5 : 1,
         ),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          Text(
-            title,
-            style: GoogleFonts.tajawal(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.tajawal(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (isValid)
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 20,
+                ),
+            ],
           ),
           const SizedBox(height: 10),
           AspectRatio(
@@ -410,16 +426,19 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: isValidating
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(color: Colors.white),
-                          SizedBox(height: 10),
+                          const CircularProgressIndicator(color: Colors.white),
+                          const SizedBox(height: 10),
                           Text(
-                            'Validating...',
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 12),
+                            BodyTalkApp.tr(context,
+                                en: 'Validating...',
+                                fr: 'Validation...',
+                                ar: 'جاري التحقق...'),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12),
                           ),
                         ],
                       ),
@@ -437,9 +456,9 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
                             const SizedBox(height: 6),
                             Text(
                               BodyTalkApp.tr(context,
-                                  en: 'No photo',
-                                  fr: 'Aucune photo',
-                                  ar: 'لا توجد صورة'),
+                                  en: 'Required',
+                                  fr: 'Requis',
+                                  ar: 'مطلوب'),
                               style: GoogleFonts.tajawal(
                                 color: Colors.white38,
                                 fontSize: 11,
