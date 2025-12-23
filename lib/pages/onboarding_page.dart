@@ -1,7 +1,6 @@
-// lib/pages/onboarding_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'login_page.dart';
 import 'package:bodytalk_app/main.dart';
@@ -192,13 +191,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          onPressed: () {
+                          onPressed: () async {
                             if (_index < 2) {
                               _controller.nextPage(
                                 duration: const Duration(milliseconds: 350),
                                 curve: Curves.easeOut,
                               );
                             } else {
+                              // Mark onboarding as completed
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.setBool('onboarding_completed', true);
+                              if (!mounted) return;
                               Navigator.pushReplacementNamed(
                                   context, LoginPage.routeName);
                             }
@@ -214,7 +218,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                       const SizedBox(height: 8),
                       TextButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          // Mark onboarding as completed even on skip
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('onboarding_completed', true);
+                          if (!mounted) return;
                           Navigator.pushReplacementNamed(
                               context, LoginPage.routeName);
                         },

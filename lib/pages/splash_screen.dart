@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'onboarding_page.dart';
+import 'login_page.dart';
+import 'main_navigation.dart';
 import 'package:bodytalk_app/main.dart';
+import 'package:bodytalk_app/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -29,19 +32,52 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // ⏱️ الانتقال بعد 3 ثوانٍ
+    // Navigate after 3 seconds - check for session resume
     Future.delayed(const Duration(seconds: 3), () async {
       if (!mounted) return;
       final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getString('app_language');
-      if (saved == null) {
+
+      // Check if language was selected before
+      final savedLang = prefs.getString('app_language');
+      if (savedLang == null) {
         await _showLanguagePicker();
       }
+
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const OnboardingPage()),
-      );
+
+      // Check if onboarding was completed
+      final onboardingCompleted =
+          prefs.getBool('onboarding_completed') ?? false;
+
+      // Check if user has valid token (try to resume session)
+      if (ApiService.isLoggedIn) {
+        // Verify token is still valid
+        final me = await ApiService.getAuthMe();
+        if (me != null && mounted) {
+          // Valid session - go directly to home
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
+          );
+          return;
+        }
+      }
+
+      if (!mounted) return;
+
+      // No valid session - check if we should show onboarding
+      if (!onboardingCompleted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingPage()),
+        );
+      } else {
+        // Onboarding done but not logged in - go to login
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+      }
     });
   }
 

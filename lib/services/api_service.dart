@@ -5,39 +5,49 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  // عنوان السيرفر الافتراضي (المحاكي في أندرويد)
+  // Server URL
   static String _baseUrl = 'http://10.0.2.2:8000';
 
   static String get baseUrl => _baseUrl;
 
-  // التوكن الحالي في الذاكرة
+  // Current token in memory
   static String? _token;
 
-  // اسم المفتاح في SharedPreferences
+  // Secure storage for auth token
+  static const _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
   static const String _tokenKey = 'access_token';
 
-  /// تهيئة عنوان السيرفر مرة واحدة في main()
-  /// السيرفر الآن على Render متاح 24/7
+  /// Initialize server URL once in main()
   static Future<void> initServer() async {
-    // استخدام سيرفر Render للإنتاج والتطوير
+    // Use Render server for production
     _baseUrl = 'https://bodytalk-server.onrender.com';
 
-    // تحميل التوكن المخزّن (إن وجد)
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString(_tokenKey);
+    // Load stored token from secure storage
+    try {
+      _token = await _secureStorage.read(key: _tokenKey);
+    } catch (e) {
+      debugPrint('Failed to read token from secure storage: $e');
+      _token = null;
+    }
   }
 
-  /// حفظ / مسح التوكن في SharedPreferences + الذاكرة
+  /// Save/clear token in secure storage + memory
   static Future<void> _saveToken(String? token) async {
-    final prefs = await SharedPreferences.getInstance();
     _token = token;
-    if (token == null) {
-      await prefs.remove(_tokenKey);
-    } else {
-      await prefs.setString(_tokenKey, token);
+    try {
+      if (token == null) {
+        await _secureStorage.delete(key: _tokenKey);
+      } else {
+        await _secureStorage.write(key: _tokenKey, value: token);
+      }
+    } catch (e) {
+      debugPrint('Failed to save token to secure storage: $e');
     }
   }
 

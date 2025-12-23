@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:bodytalk_app/main.dart';
 import 'package:bodytalk_app/services/api_service.dart';
+import 'package:bodytalk_app/services/pose_validation_service.dart';
 
 class BodyAnalysisCapturePage extends StatefulWidget {
   const BodyAnalysisCapturePage({super.key});
@@ -18,10 +19,13 @@ class BodyAnalysisCapturePage extends StatefulWidget {
 
 class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
   final ImagePicker _picker = ImagePicker();
+  final PoseValidationService _poseService = PoseValidationService.instance;
 
   File? _frontImage;
   File? _sideImage;
   bool _loading = false;
+  bool _validatingFront = false;
+  bool _validatingSide = false;
   Map<String, dynamic>? _result;
   bool _showTip = false;
 
@@ -32,13 +36,42 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
     try {
       final picked = await _picker.pickImage(source: source, imageQuality: 85);
       if (picked != null && mounted) {
+        final file = File(picked.path);
+
+        // Validate the photo
+        setState(() => _validatingFront = true);
+        final validation = await _poseService.validateBodyPhoto(
+          file,
+          expectSidePose: false,
+        );
+
+        if (!mounted) return;
+        setState(() => _validatingFront = false);
+
+        if (!validation.isValid) {
+          final lang = BodyTalkApp.getLocaleCode(context) ?? 'en';
+          final errorMsg = PoseValidationService.getLocalizedError(
+            validation.errorMessageKey!,
+            lang,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return;
+        }
+
         setState(() {
-          _frontImage = File(picked.path);
+          _frontImage = file;
           _result = null;
         });
       }
     } catch (e) {
       debugPrint('Error picking front image: $e');
+      if (mounted) setState(() => _validatingFront = false);
     }
   }
 
@@ -46,13 +79,42 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
     try {
       final picked = await _picker.pickImage(source: source, imageQuality: 85);
       if (picked != null && mounted) {
+        final file = File(picked.path);
+
+        // Validate the photo
+        setState(() => _validatingSide = true);
+        final validation = await _poseService.validateBodyPhoto(
+          file,
+          expectSidePose: true,
+        );
+
+        if (!mounted) return;
+        setState(() => _validatingSide = false);
+
+        if (!validation.isValid) {
+          final lang = BodyTalkApp.getLocaleCode(context) ?? 'en';
+          final errorMsg = PoseValidationService.getLocalizedError(
+            validation.errorMessageKey!,
+            lang,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return;
+        }
+
         setState(() {
-          _sideImage = File(picked.path);
+          _sideImage = file;
           _result = null;
         });
       }
     } catch (e) {
       debugPrint('Error picking side image: $e');
+      if (mounted) setState(() => _validatingSide = false);
     }
   }
 
@@ -176,6 +238,7 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
                         onCamera: () => _pickFrontImage(ImageSource.camera),
                         onGallery: () => _pickFrontImage(ImageSource.gallery),
                         primaryBlue: primaryBlue,
+                        isValidating: _validatingFront,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -189,6 +252,7 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
                         onCamera: () => _pickSideImage(ImageSource.camera),
                         onGallery: () => _pickSideImage(ImageSource.gallery),
                         primaryBlue: primaryBlue,
+                        isValidating: _validatingSide,
                       ),
                     ),
                   ],
@@ -264,7 +328,8 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
           children: [
             Row(
               children: [
-                Icon(Icons.lightbulb_outline, color: Colors.amber, size: 20),
+                const Icon(Icons.lightbulb_outline,
+                    color: Colors.amber, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -311,6 +376,7 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
     required VoidCallback onCamera,
     required VoidCallback onGallery,
     required Color primaryBlue,
+    bool isValidating = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -343,29 +409,44 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
                 color: Colors.black.withValues(alpha: 0.3),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
-              child: image != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.file(image, fit: BoxFit.cover),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.person_outline,
-                            color: Colors.white38, size: 40),
-                        const SizedBox(height: 6),
-                        Text(
-                          BodyTalkApp.tr(context,
-                              en: 'No photo',
-                              fr: 'Aucune photo',
-                              ar: 'لا توجد صورة'),
-                          style: GoogleFonts.tajawal(
-                            color: Colors.white38,
-                            fontSize: 11,
+              child: isValidating
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(color: Colors.white),
+                          SizedBox(height: 10),
+                          Text(
+                            'Validating...',
+                            style:
+                                TextStyle(color: Colors.white70, fontSize: 12),
                           ),
+                        ],
+                      ),
+                    )
+                  : image != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(image, fit: BoxFit.cover),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.person_outline,
+                                color: Colors.white38, size: 40),
+                            const SizedBox(height: 6),
+                            Text(
+                              BodyTalkApp.tr(context,
+                                  en: 'No photo',
+                                  fr: 'Aucune photo',
+                                  ar: 'لا توجد صورة'),
+                              style: GoogleFonts.tajawal(
+                                color: Colors.white38,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
             ),
           ),
           const SizedBox(height: 10),
@@ -376,7 +457,7 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
                   icon: Icons.camera_alt,
                   label: BodyTalkApp.tr(context,
                       en: 'Camera', fr: 'Caméra', ar: 'كاميرا'),
-                  onTap: _loading ? null : onCamera,
+                  onTap: (_loading || isValidating) ? null : onCamera,
                   color: primaryBlue,
                 ),
               ),
@@ -386,7 +467,7 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
                   icon: Icons.photo_library,
                   label: BodyTalkApp.tr(context,
                       en: 'Gallery', fr: 'Galerie', ar: 'معرض'),
-                  onTap: _loading ? null : onGallery,
+                  onTap: (_loading || isValidating) ? null : onGallery,
                   color: Colors.grey,
                 ),
               ),

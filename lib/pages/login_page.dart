@@ -43,9 +43,9 @@ class _LoginPageState extends State<LoginPage> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _email.text = prefs.getString('email') ?? '';
-      _password.text = prefs.getString('password') ?? '';
-      _remember = _email.text.isNotEmpty && _password.text.isNotEmpty;
+      // Only load email for convenience - NEVER store password locally
+      _email.text = prefs.getString('last_email') ?? '';
+      _remember = _email.text.isNotEmpty;
     });
   }
 
@@ -86,11 +86,10 @@ class _LoginPageState extends State<LoginPage> {
       // نجاح
       final prefs = await SharedPreferences.getInstance();
       if (_remember) {
-        await prefs.setString('email', email);
-        await prefs.setString('password', password);
+        // Only save email for convenience - NEVER save password
+        await prefs.setString('last_email', email);
       } else {
-        await prefs.remove('email');
-        await prefs.remove('password');
+        await prefs.remove('last_email');
       }
 
       setState(() => _loading = false);
@@ -379,20 +378,24 @@ class _LoginPageState extends State<LoginPage> {
               if (result != null && result['success'] == true) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(BodyTalkApp.tr(context,
-                        en: 'Password reset link sent to your email ✅',
-                        fr: 'Lien de réinitialisation envoyé à votre e-mail ✅',
-                        ar: 'تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني ✅')),
+                    content: Text(result['message'] ??
+                        BodyTalkApp.tr(context,
+                            en: 'Password reset link sent to your email ✅',
+                            fr: 'Lien de réinitialisation envoyé à votre e-mail ✅',
+                            ar: 'تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني ✅')),
                     backgroundColor: Colors.green,
                   ),
                 );
               } else {
+                // Show backend error message if available
+                final errorMsg = result?['message'] ?? result?['error'];
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(BodyTalkApp.tr(context,
-                        en: 'Failed to send reset link. Please try again.',
-                        fr: 'Échec de l\'envoi du lien. Veuillez réessayer.',
-                        ar: 'فشل إرسال رابط إعادة التعيين. حاول مرة أخرى.')),
+                    content: Text(errorMsg ??
+                        BodyTalkApp.tr(context,
+                            en: 'Failed to send reset link. Please try again.',
+                            fr: 'Échec de l\'envoi du lien. Veuillez réessayer.',
+                            ar: 'فشل إرسال رابط إعادة التعيين. حاول مرة أخرى.')),
                     backgroundColor: Colors.redAccent,
                   ),
                 );

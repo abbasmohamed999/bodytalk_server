@@ -319,20 +319,24 @@ class _ProfilePageState extends State<ProfilePage> {
       if (result != null && result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(BodyTalkApp.tr(context,
-                en: 'Password reset link sent to your email ✅',
-                fr: 'Lien de réinitialisation envoyé à votre e-mail ✅',
-                ar: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك ✅')),
+            content: Text(result['message'] ??
+                BodyTalkApp.tr(context,
+                    en: 'Password reset link sent to your email ✅',
+                    fr: 'Lien de réinitialisation envoyé à votre e-mail ✅',
+                    ar: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك ✅')),
             backgroundColor: Colors.green,
           ),
         );
       } else {
+        // Show backend error message if available
+        final errorMsg = result?['message'] ?? result?['error'];
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(BodyTalkApp.tr(context,
-                en: 'Failed to send reset link. Please try again.',
-                fr: 'Échec de l\'envoi du lien. Veuillez réessayer.',
-                ar: 'فشل إرسال الرابط. حاول مرة أخرى.')),
+            content: Text(errorMsg ??
+                BodyTalkApp.tr(context,
+                    en: 'Failed to send reset link. Please try again.',
+                    fr: 'Échec de l\'envoi du lien. Veuillez réessayer.',
+                    ar: 'فشل إرسال الرابط. حاول مرة أخرى.')),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -1107,16 +1111,19 @@ class _ProfilePageState extends State<ProfilePage> {
                             color: Colors.white,
                             fontSize: 14,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(
                           BodyTalkApp.tr(context,
-                              en: 'Reset your password via email.',
-                              fr: 'Réinitialisez votre mot de passe par e-mail.',
-                              ar: 'إعادة تعيين كلمة المرور عبر البريد الإلكتروني.'),
+                              en: 'Reset via email',
+                              fr: 'Réinitialiser par e-mail',
+                              ar: 'إعادة تعيين عبر البريد'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         onTap: _showChangePasswordDialog,
                       ),
@@ -1137,16 +1144,19 @@ class _ProfilePageState extends State<ProfilePage> {
                             color: Colors.white,
                             fontSize: 14,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(
                           BodyTalkApp.tr(context,
-                              en: 'Update the email linked to your account.',
-                              fr: 'Mettez à jour l\'e-mail lié à votre compte.',
-                              ar: 'تحديث البريد المرتبط بحسابك.'),
+                              en: 'Update account email',
+                              fr: 'Mettre à jour l\'e-mail',
+                              ar: 'تحديث البريد المرتبط بحسابك'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         onTap: _editEmail,
                       ),
@@ -1171,13 +1181,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         subtitle: Text(
                           BodyTalkApp.tr(context,
-                              en: 'Sign out and return to login page.',
-                              fr: 'Déconnectez-vous et revenez à la page de connexion.',
-                              ar: 'إغلاق جلستك الحالية والعودة لصفحة تسجيل الدخول.'),
+                              en: 'Sign out',
+                              fr: 'Se déconnecter',
+                              ar: 'إغلاق الجلسة'),
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         onTap: _logout,
                       ),
@@ -1202,13 +1214,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         subtitle: Text(
                           BodyTalkApp.tr(context,
-                              en: 'Only data stored on this device will be deleted.',
-                              fr: 'Seules les données stockées sur cet appareil seront supprimées.',
-                              ar: 'سيتم حذف بيانات التطبيق المخزّنة على هذا الجهاز فقط.'),
+                              en: 'Local data only',
+                              fr: 'Données locales uniquement',
+                              ar: 'البيانات المحلية فقط'),
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         onTap: _deleteAccountLocal,
                       ),
@@ -1243,13 +1257,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         subtitle: Text(
                           BodyTalkApp.tr(context,
-                              en: 'Light reminders for analysis and follow-up.',
-                              fr: 'Rappels légers pour l\'analyse et le suivi.',
-                              ar: 'تنبيهات خفيفة لتذكيرك بالتحليل والمتابعة.'),
+                              en: 'Reminders for analysis',
+                              fr: 'Rappels pour l\'analyse',
+                              ar: 'تذكيرات للتحليل'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         value: _notifEnabled,
                         onChanged: (v) async {
@@ -1295,13 +1311,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         subtitle: Text(
                           BodyTalkApp.tr(context,
-                              en: 'Toggle between dark and light themes.',
-                              fr: 'Basculer entre les thèmes sombre et clair.',
-                              ar: 'التبديل بين الوضع الداكن والفاتح.'),
+                              en: 'Dark/Light theme',
+                              fr: 'Thème sombre/clair',
+                              ar: 'داكن/فاتح'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         value: _darkMode,
                         onChanged: (v) {
@@ -1343,13 +1361,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         subtitle: Text(
                           BodyTalkApp.tr(context,
-                              en: 'When enabled: meal plan and workout plan sync automatically.',
-                              fr: "Lorsqu'activé : plan de repas et plan d'entraînement se synchronisent automatiquement.",
-                              ar: 'عند التفعيل: تُربط خطة الوجبات بخطة التمارين تلقائيًا.'),
+                              en: 'Sync meal & workout plans',
+                              fr: 'Synchroniser repas et entraînement',
+                              ar: 'مزامنة خطط الوجبات والتمارين'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         value: _autoSyncPlan,
                         onChanged: (v) async {
@@ -1387,13 +1407,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         subtitle: Text(
                           BodyTalkApp.tr(context,
-                              en: 'Use Face ID / Fingerprint to login quickly.',
-                              fr: 'Utilisez Face ID / empreinte digitale pour vous connecter rapidement.',
-                              ar: 'استخدم Face ID / البصمة لتسجيل الدخول بسرعة.'),
+                              en: 'Face ID / Fingerprint',
+                              fr: 'Face ID / Empreinte',
+                              ar: 'Face ID / بصمة'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         value: _biometricEnabled,
                         onChanged: (v) async {
