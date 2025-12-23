@@ -265,20 +265,21 @@ class _SafeCropMaskPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final isReady = validationState == LiveValidationState.OK_READY;
 
-    // Draw dark overlay (full screen)
-    final darkOverlay = Paint()..color = Colors.black.withValues(alpha: 0.65);
+    // خلفية زرقاء داكنة #0F2A4A مع تعتيم
+    final darkOverlay = Paint()
+      ..color = const Color(0xFF0F2A4A).withValues(alpha: 0.75);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), darkOverlay);
 
-    // Calculate silhouette dimensions (centered, proper proportions)
-    final silhouetteHeight = size.height * 0.70; // 70% of screen
+    // حساب أبعاد الصورة الظلية (مركزية، نسب صحيحة)
+    final silhouetteHeight = size.height * 0.70;
     final silhouetteWidth = isFrontMode
-        ? silhouetteHeight * 0.35 // Front: narrow (shoulders width)
-        : silhouetteHeight * 0.42; // Side: slightly wider
+        ? silhouetteHeight * 0.50 // الوضع الأمامي: عرض متوسط
+        : silhouetteHeight * 0.45; // الوضع الجانبي: عرض أقل قليلاً
 
     final centerX = size.width / 2;
     final startY = (size.height - silhouetteHeight) / 2 + size.height * 0.05;
 
-    // Create professional human silhouette path
+    // إنشاء مسار الصورة الظلية الاحترافي
     final silhouettePath = Path();
     if (isFrontMode) {
       _drawProfessionalFrontSilhouette(
@@ -288,7 +289,7 @@ class _SafeCropMaskPainter extends CustomPainter {
           silhouettePath, centerX, startY, silhouetteWidth, silhouetteHeight);
     }
 
-    // Cut out silhouette from dark overlay (spotlight effect)
+    // قص الصورة الظلية من الخلفية الداكنة (تأثير الكشاف)
     canvas.drawPath(
       silhouettePath,
       Paint()
@@ -296,178 +297,133 @@ class _SafeCropMaskPainter extends CustomPainter {
         ..blendMode = BlendMode.clear,
     );
 
-    // Draw silhouette outline
-    final outlineColor = isReady
-        ? Colors.green.withValues(alpha: 0.8)
-        : Colors.white.withValues(alpha: 0.35);
+    // رسم حدود الصورة الظلية
+    // الخطوط: بيضاء، سمك 3px (كما هو مطلوب)
+    final outlineColor =
+        isReady ? Colors.green.withValues(alpha: 0.9) : Colors.white;
 
     canvas.drawPath(
       silhouettePath,
       Paint()
         ..color = outlineColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5,
+        ..strokeWidth = 3.0, // سمك 3px كما هو مطلوب
     );
 
-    // Draw subtle fill inside silhouette
+    // رسم تعبئة خفيفة داخل الصورة الظلية
     canvas.drawPath(
       silhouettePath,
       Paint()
         ..color = outlineColor.withValues(alpha: 0.08)
         ..style = PaintingStyle.fill,
     );
-
-    // Draw guide lines (shoulders, hips, knees, feet baseline)
-    _drawGuideLines(canvas, centerX, startY, silhouetteWidth, silhouetteHeight,
-        outlineColor);
   }
 
   void _drawProfessionalFrontSilhouette(
       Path path, double centerX, double startY, double width, double height) {
-    // Human proportions (privacy-safe: shoulders → feet)
-    final shoulderWidth = width * 0.95;
-    final hipWidth = width * 0.85;
-    final kneeWidth = width * 0.50;
-    final ankleWidth = width * 0.40;
+    // استخدام نظام نسبي (0..1) كما هو مطلوب
+    // تحويل الإحداثيات النسبية إلى إحداثيات حقيقية
+    double toX(double nx) => centerX - width / 2 + nx * width;
+    double toY(double ny) => startY + ny * height;
 
-    // Vertical positions
-    final shoulderY = startY;
-    final waistY = startY + height * 0.30;
-    final hipY = startY + height * 0.35;
-    final kneeY = startY + height * 0.65;
-    final ankleY = startY + height * 0.95;
-    final footY = startY + height;
+    // الرأس (بيضاوي صغير أعلى المنتصف)
+    path.addOval(Rect.fromCenter(
+      center: Offset(toX(0.5), toY(0.09)),
+      width: width * 0.18,
+      height: height * 0.11,
+    ));
 
-    // Start from left shoulder
-    path.moveTo(centerX - shoulderWidth / 2, shoulderY);
-
-    // Left side (shoulder → waist → hip → knee → ankle → foot)
+    // خط الكتفين (من اليسار إلى اليمين عند y ≈ 0.20)
+    path.moveTo(toX(0.30), toY(0.20));
     path.quadraticBezierTo(
-      centerX - shoulderWidth / 2.2,
-      waistY,
-      centerX - hipWidth / 2,
-      hipY,
-    );
-    path.lineTo(centerX - kneeWidth / 2, kneeY);
-    path.lineTo(centerX - ankleWidth / 2, ankleY);
-    path.lineTo(centerX - ankleWidth / 2.5, footY);
-
-    // Bottom (feet gap)
-    path.lineTo(centerX + ankleWidth / 2.5, footY);
-
-    // Right side (foot → ankle → knee → hip → waist → shoulder)
-    path.lineTo(centerX + ankleWidth / 2, ankleY);
-    path.lineTo(centerX + kneeWidth / 2, kneeY);
-    path.lineTo(centerX + hipWidth / 2, hipY);
-    path.quadraticBezierTo(
-      centerX + shoulderWidth / 2.2,
-      waistY,
-      centerX + shoulderWidth / 2,
-      shoulderY,
+      toX(0.50),
+      toY(0.18),
+      toX(0.70),
+      toY(0.20),
     );
 
-    path.close();
+    // الذراع الأيسر
+    path.moveTo(toX(0.30), toY(0.20));
+    path.quadraticBezierTo(toX(0.28), toY(0.35), toX(0.32), toY(0.55));
+    path.quadraticBezierTo(toX(0.33), toY(0.62), toX(0.34), toY(0.66));
+    path.quadraticBezierTo(toX(0.35), toY(0.70), toX(0.36), toY(0.72));
+
+    // الذراع الأيمن
+    path.moveTo(toX(0.70), toY(0.20));
+    path.quadraticBezierTo(toX(0.72), toY(0.35), toX(0.68), toY(0.55));
+    path.quadraticBezierTo(toX(0.67), toY(0.62), toX(0.66), toY(0.66));
+    path.quadraticBezierTo(toX(0.65), toY(0.70), toX(0.64), toY(0.72));
+
+    // الجذع (من الصدر إلى الوركين)
+    path.moveTo(toX(0.32), toY(0.28));
+    path.quadraticBezierTo(toX(0.50), toY(0.33), toX(0.68), toY(0.28));
+    path.quadraticBezierTo(toX(0.66), toY(0.45), toX(0.62), toY(0.52));
+    path.quadraticBezierTo(toX(0.50), toY(0.56), toX(0.38), toY(0.52));
+    path.quadraticBezierTo(toX(0.34), toY(0.45), toX(0.32), toY(0.28));
+
+    // خط الوركين (منحني قليلاً عند y ≈ 0.56)
+    path.moveTo(toX(0.36), toY(0.56));
+    path.quadraticBezierTo(toX(0.50), toY(0.58), toX(0.64), toY(0.56));
+
+    // الساق اليسرى
+    path.moveTo(toX(0.42), toY(0.56));
+    path.quadraticBezierTo(toX(0.40), toY(0.70), toX(0.40), toY(0.86));
+    path.lineTo(toX(0.40), toY(0.95));
+
+    // الساق اليمنى
+    path.moveTo(toX(0.58), toY(0.56));
+    path.quadraticBezierTo(toX(0.60), toY(0.70), toX(0.60), toY(0.86));
+    path.lineTo(toX(0.60), toY(0.95));
+
+    // الخط الإرشادي عند الصدر
+    path.moveTo(toX(0.28), toY(0.36));
+    path.lineTo(toX(0.72), toY(0.36));
+
+    // الخط الإرشادي عند الوركين
+    path.moveTo(toX(0.32), toY(0.56));
+    path.lineTo(toX(0.68), toY(0.56));
   }
 
   void _drawProfessionalSideSilhouette(
       Path path, double centerX, double startY, double width, double height) {
-    // Side view proportions (90° turn)
-    final chestDepth = width * 0.55;
-    final hipDepth = width * 0.50;
-    final legThickness = width * 0.35;
+    // استخدام نظام نسبي (0..1) كما هو مطلوب
+    double toX(double nx) => centerX - width / 2 + nx * width;
+    double toY(double ny) => startY + ny * height;
 
-    // Vertical positions
-    final shoulderY = startY;
-    final chestY = startY + height * 0.20;
-    final waistY = startY + height * 0.30;
-    final hipY = startY + height * 0.35;
-    final kneeY = startY + height * 0.65;
-    final ankleY = startY + height * 0.95;
-    final footY = startY + height;
+    // الرأس (بيضاوي جانبي عند x ≈ 0.60, y ≈ 0.09)
+    path.addOval(Rect.fromCenter(
+      center: Offset(toX(0.60), toY(0.09)),
+      width: width * 0.18,
+      height: height * 0.11,
+    ));
 
-    // Start from back shoulder
-    path.moveTo(centerX - chestDepth * 0.25, shoulderY);
+    // العنق إلى الكتف
+    path.moveTo(toX(0.58), toY(0.14));
+    path.quadraticBezierTo(toX(0.56), toY(0.18), toX(0.54), toY(0.20));
 
-    // Back profile (shoulder → chest → waist → hip → back leg)
-    path.quadraticBezierTo(
-      centerX - chestDepth * 0.15,
-      chestY,
-      centerX - hipDepth * 0.15,
-      waistY,
-    );
-    path.lineTo(centerX - hipDepth * 0.10, hipY);
-    path.lineTo(centerX - legThickness * 0.15, kneeY);
-    path.lineTo(centerX - legThickness * 0.10, ankleY);
-    path.lineTo(centerX, footY);
+    // الصدر إلى البطن
+    path.moveTo(toX(0.54), toY(0.20));
+    path.quadraticBezierTo(toX(0.52), toY(0.30), toX(0.52), toY(0.42));
+    path.quadraticBezierTo(toX(0.53), toY(0.50), toX(0.52), toY(0.56));
 
-    // Front profile (front leg → knee → hip → waist → chest → shoulder)
-    path.lineTo(centerX + legThickness * 0.25, ankleY);
-    path.lineTo(centerX + legThickness * 0.30, kneeY);
-    path.lineTo(centerX + hipDepth * 0.35, hipY);
-    path.quadraticBezierTo(
-      centerX + hipDepth * 0.40,
-      waistY,
-      centerX + chestDepth * 0.45,
-      chestY,
-    );
-    path.quadraticBezierTo(
-      centerX + chestDepth * 0.40,
-      shoulderY,
-      centerX + chestDepth * 0.30,
-      shoulderY,
-    );
+    // الورك إلى الفخذ
+    path.moveTo(toX(0.52), toY(0.56));
+    path.quadraticBezierTo(toX(0.51), toY(0.64), toX(0.51), toY(0.72));
 
-    path.close();
+    // الركبة إلى الكاحل
+    path.moveTo(toX(0.51), toY(0.72));
+    path.quadraticBezierTo(toX(0.51), toY(0.84), toX(0.51), toY(0.95));
+
+    // الذراع الجانبي
+    path.moveTo(toX(0.56), toY(0.26));
+    path.quadraticBezierTo(toX(0.57), toY(0.42), toX(0.55), toY(0.66));
+
+    // خط الأرضي (عند القدمين)
+    path.moveTo(toX(0.40), toY(0.95));
+    path.lineTo(toX(0.75), toY(0.95));
   }
 
-  void _drawGuideLines(Canvas canvas, double centerX, double startY,
-      double width, double height, Color color) {
-    final guidePaint = Paint()
-      ..color = color.withValues(alpha: 0.25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    // Horizontal guide lines with labels
-    final guides = [
-      (0.0, 'Shoulders'),
-      (0.35, 'Hips'),
-      (0.65, 'Knees'),
-      (1.0, 'Feet'),
-    ];
-
-    for (final guide in guides) {
-      final y = startY + height * guide.$1;
-      _drawDashedLine(
-        canvas,
-        Offset(centerX - width * 0.6, y),
-        Offset(centerX + width * 0.6, y),
-        guidePaint,
-      );
-    }
-  }
-
-  void _drawDashedLine(Canvas canvas, Offset start, Offset end, Paint paint) {
-    const dashWidth = 5.0;
-    const dashSpace = 5.0;
-    double distance = (end - start).distance;
-    double drawnDistance = 0.0;
-
-    while (drawnDistance < distance) {
-      final dashEnd = drawnDistance + dashWidth;
-      if (dashEnd > distance) break;
-
-      final startRatio = drawnDistance / distance;
-      final endRatio = dashEnd / distance;
-
-      canvas.drawLine(
-        Offset.lerp(start, end, startRatio)!,
-        Offset.lerp(start, end, endRatio)!,
-        paint,
-      );
-
-      drawnDistance += dashWidth + dashSpace;
-    }
-  }
+  // لا حاجة لخطوط إرشادية إضافية - مرسومة في الشكل نفسه
 
   @override
   bool shouldRepaint(_SafeCropMaskPainter oldDelegate) {
