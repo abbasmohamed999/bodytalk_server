@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../services/api_service.dart';
+import '../services/food_validation_service.dart';
 import 'package:bodytalk_app/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,9 +21,11 @@ class FoodAnalysisPage extends StatefulWidget {
 
 class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
   final ImagePicker _picker = ImagePicker();
+  final FoodValidationService _foodValidator = FoodValidationService();
 
   File? _imageFile;
   bool _loading = false;
+  bool _validating = false;
   Map<String, dynamic>? _result;
   String _selectedCuisine = 'general'; // Default cuisine
 
@@ -85,15 +88,43 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
       return;
     }
 
+    final currentLang = BodyTalkApp.getLocaleCode(context) ?? 'en';
+
+    // Step 1: Validate image is food using ML Kit
     setState(() {
-      _loading = true;
+      _validating = true;
+      _loading = false;
       _result = null;
     });
 
     try {
-      // الحصول على اللغة الحالية
-      final currentLang = BodyTalkApp.getLocaleCode(context) ?? 'en';
-      // الآن الدالة ترجع Map<String, dynamic>؟
+      final validationResult = await _foodValidator.validateFoodImage(
+        _imageFile!,
+        locale: currentLang,
+      );
+
+      if (!mounted) return;
+
+      if (!validationResult.isFood) {
+        // Image is NOT food - show error and stop
+        setState(() {
+          _validating = false;
+          _loading = false;
+          _result = {
+            "success": false,
+            "error_code": "NOT_FOOD_IMAGE",
+            "message": validationResult.errorMessage,
+          };
+        });
+        return;
+      }
+
+      // Step 2: Image validated as food - proceed with backend analysis
+      setState(() {
+        _validating = false;
+        _loading = true;
+      });
+
       final data = await ApiService.analyzeFoodImage(
         _imageFile!,
         language: currentLang,
@@ -103,7 +134,6 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
       if (!mounted) return;
 
       if (data == null) {
-        // فشل الاتصال أو خطأ في السيرفر
         setState(() {
           _loading = false;
           _result = {
@@ -117,9 +147,25 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
         return;
       }
 
+      // Check for NOT_FOOD_IMAGE error from backend
+      if (data["error_code"] == "NOT_FOOD_IMAGE") {
+        setState(() {
+          _loading = false;
+          _result = {
+            "success": false,
+            "error_code": "NOT_FOOD_IMAGE",
+            "message": data["message"] ??
+                BodyTalkApp.tr(context,
+                    en: "This photo doesn't look like food. Please capture a clear meal photo.",
+                    fr: "Cette photo ne semble pas être de la nourriture. Veuillez capturer une photo claire d'un repas.",
+                    ar: 'لا تبدو هذه الصورة كطعام. يرجى التقاط صورة واضحة للوجبة.'),
+          };
+        });
+        return;
+      }
+
       setState(() {
         _loading = false;
-        // لو الـ API يرجع success: true سنستخدمه، وإذا ما رجعه نضيفه يدويًا
         _result = {
           "success": data["success"] ?? true,
           ...data,
@@ -128,6 +174,7 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
+        _validating = false;
         _loading = false;
         _result = {
           "success": false,
@@ -470,8 +517,10 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: _loading || _imageFile == null ? null : () => _analyze(),
-            icon: _loading
+            onPressed: _loading || _validating || _imageFile == null
+                ? null
+                : () => _analyze(),
+            icon: _loading || _validating
                 ? const SizedBox(
                     width: 18,
                     height: 18,
@@ -482,15 +531,20 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
                   )
                 : const Icon(Icons.analytics_rounded),
             label: Text(
-              _loading
+              _validating
                   ? BodyTalkApp.tr(context,
-                      en: 'Analyzing...',
-                      fr: 'Analyse...',
-                      ar: 'جاري التحليل...')
-                  : BodyTalkApp.tr(context,
-                      en: 'Analyze Meal',
-                      fr: 'Analyser le Repas',
-                      ar: 'تحليل الوجبة'),
+                      en: 'Validating image...',
+                      fr: 'Validation de l\'image...',
+                      ar: 'جاري التحقق من الصورة...')
+                  : _loading
+                      ? BodyTalkApp.tr(context,
+                          en: 'Analyzing...',
+                          fr: 'Analyse...',
+                          ar: 'جاري التحليل...')
+                      : BodyTalkApp.tr(context,
+                          en: 'Analyze Meal',
+                          fr: 'Analyser le Repas',
+                          ar: 'تحليل الوجبة'),
               style: GoogleFonts.tajawal(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -511,6 +565,29 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
   }
 
   Widget _buildResultSection(Color primaryBlue, Color accentOrange) {
+    // Show validating state
+    if (_validating) {
+      return Column(
+        children: [
+          const SizedBox(height: 8),
+          const CircularProgressIndicator(color: Colors.white),
+          const SizedBox(height: 10),
+          Text(
+            BodyTalkApp.tr(
+              context,
+              en: 'Checking if image contains food...',
+              fr: 'Vérification si l\'image contient de la nourriture...',
+              ar: 'جاري التحقق من احتواء الصورة على طعام...',
+            ),
+            style: GoogleFonts.tajawal(
+              color: Colors.white70,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      );
+    }
+
     if (_loading) {
       return Column(
         children: [
@@ -538,29 +615,64 @@ class _FoodAnalysisPageState extends State<FoodAnalysisPage> {
     }
 
     if (_result!["success"] == false) {
+      // Check if it's a NOT_FOOD_IMAGE error for special styling
+      final isNotFoodError = _result!["error_code"] == "NOT_FOOD_IMAGE";
       return Padding(
         padding: const EdgeInsets.only(top: 8),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.red.withValues(alpha: 0.15),
+            color: isNotFoodError
+                ? Colors.orange.withValues(alpha: 0.15)
+                : Colors.red.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
-          ),
-          child: Text(
-            _result!["message"] ??
-                BodyTalkApp.tr(
-                  context,
-                  en: 'Meal analysis error.',
-                  fr: "Erreur d'analyse du repas.",
-                  ar: 'خطأ في تحليل الوجبة.',
-                ),
-            textAlign: TextAlign.center,
-            style: GoogleFonts.tajawal(
-              color: Colors.white,
-              fontSize: 13,
+            border: Border.all(
+              color: isNotFoodError
+                  ? Colors.orange.withValues(alpha: 0.4)
+                  : Colors.red.withValues(alpha: 0.4),
             ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                isNotFoodError ? Icons.no_food_rounded : Icons.error_outline,
+                color: isNotFoodError ? Colors.orange : Colors.red,
+                size: 40,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _result!["message"] ??
+                    BodyTalkApp.tr(
+                      context,
+                      en: 'Meal analysis error.',
+                      fr: "Erreur d'analyse du repas.",
+                      ar: 'خطأ في تحليل الوجبة.',
+                    ),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.tajawal(
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              if (isNotFoodError) ...[
+                const SizedBox(height: 12),
+                Text(
+                  BodyTalkApp.tr(
+                    context,
+                    en: 'Please take a photo of actual food.',
+                    fr: 'Veuillez prendre une photo de vraie nourriture.',
+                    ar: 'يرجى التقاط صورة لطعام حقيقي.',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.tajawal(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       );

@@ -11,6 +11,7 @@ flutter_*.log
 # Android
 *.jks
 *.keystore
+*.hprof
 android/app/debug
 android/app/profile
 android/app/release

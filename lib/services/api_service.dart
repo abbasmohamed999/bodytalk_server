@@ -450,6 +450,25 @@ class ApiService {
       debugPrint('📥 Food Analysis Status: ${response.statusCode}');
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
+      } else if (response.statusCode == 422) {
+        // NOT_FOOD_IMAGE or validation error from backend
+        debugPrint('analyzeFoodImage rejected: ${response.body}');
+        try {
+          final errorData = jsonDecode(response.body) as Map<String, dynamic>;
+          return {
+            'success': false,
+            'error_code': errorData['error_code'] ?? 'NOT_FOOD_IMAGE',
+            'message': errorData['message'] ??
+                errorData['detail'] ??
+                'Image validation failed',
+          };
+        } catch (_) {
+          return {
+            'success': false,
+            'error_code': 'NOT_FOOD_IMAGE',
+            'message': 'This image was rejected by the server.',
+          };
+        }
       } else {
         debugPrint(
             'analyzeFoodImage failed: ${response.statusCode} ${response.body}');
