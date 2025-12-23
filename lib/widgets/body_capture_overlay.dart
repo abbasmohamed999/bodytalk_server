@@ -24,21 +24,14 @@ class BodyCaptureOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isReady = validationState == LiveValidationState.OK_READY;
+
     return Stack(
       children: [
-        // Dark overlay background
-        Container(
-          color: Colors.black.withValues(alpha: 0.5),
-        ),
-
-        // Cutout silhouette area
-        Center(
+        // Safe crop mask (darken area outside silhouette - spotlight effect)
+        Positioned.fill(
           child: CustomPaint(
-            size: Size(
-              MediaQuery.of(context).size.width * 0.6,
-              MediaQuery.of(context).size.height * 0.7,
-            ),
-            painter: _BodySilhouettePainter(
+            painter: _SafeCropMaskPainter(
               isFrontMode: isFrontMode,
               validationState: validationState,
             ),
@@ -53,19 +46,20 @@ class BodyCaptureOverlay extends StatelessWidget {
           child: _buildInstructionBanner(context),
         ),
 
-        // Bottom guidance text
+        // Bottom guidance text - ONLY show success when OK_READY
         if (guidanceText != null && guidanceText!.isNotEmpty)
           Positioned(
             bottom: 120,
             left: 20,
             right: 20,
-            child: _buildGuidanceText(context),
+            child: _buildGuidanceText(context, isReady),
           ),
 
         // Body part labels (Privacy-safe: shoulders, hips, feet only)
-        Positioned.fill(
-          child: _buildBodyPartLabels(context),
-        ),
+        if (!isReady)
+          Positioned.fill(
+            child: _buildBodyPartLabels(context),
+          ),
       ],
     );
   }
@@ -127,14 +121,30 @@ class BodyCaptureOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildGuidanceText(BuildContext context) {
-    final isReady = validationState == LiveValidationState.OK_READY;
+  Widget _buildGuidanceText(BuildContext context, bool isReady) {
+    // Determine color based on validation state - NO premature success
+    Color backgroundColor;
+    IconData icon;
+
+    if (isReady) {
+      backgroundColor = Colors.green.withValues(alpha: 0.9);
+      icon = Icons.check_circle;
+    } else {
+      // Show neutral blue for instructions, orange for warnings
+      final isWarning = guidanceText!.contains('close') ||
+          guidanceText!.contains('far') ||
+          guidanceText!.contains('orientation') ||
+          guidanceText!.contains('partial');
+      backgroundColor = isWarning
+          ? Colors.orange.withValues(alpha: 0.9)
+          : const Color(0xFF2563EB).withValues(alpha: 0.9);
+      icon = isWarning ? Icons.warning_amber : Icons.info_outline;
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: isReady
-            ? Colors.green.withValues(alpha: 0.9)
-            : Colors.orange.withValues(alpha: 0.9),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -147,7 +157,7 @@ class BodyCaptureOverlay extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            isReady ? Icons.check_circle : Icons.info_outline,
+            icon,
             color: Colors.white,
             size: 22,
           ),
@@ -239,13 +249,14 @@ class BodyCaptureOverlay extends StatelessWidget {
   }
 }
 
-/// Custom painter for body silhouette overlay
-/// Privacy-safe: NO FACE - only shoulders, torso, hips, legs
-class _BodySilhouettePainter extends CustomPainter {
+/// Custom painter for safe crop mask with professional human silhouette
+/// Creates spotlight effect - dim outside, clear silhouette inside
+/// Privacy-safe: NO FACE - shoulders → feet only
+class _SafeCropMaskPainter extends CustomPainter {
   final bool isFrontMode;
   final LiveValidationState validationState;
 
-  _BodySilhouettePainter({
+  _SafeCropMaskPainter({
     required this.isFrontMode,
     required this.validationState,
   });
@@ -253,111 +264,183 @@ class _BodySilhouettePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final isReady = validationState == LiveValidationState.OK_READY;
-    final paint = Paint()
-      ..color = isReady
-          ? Colors.green.withValues(alpha: 0.3)
-          : Colors.white.withValues(alpha: 0.25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
 
-    final fillPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.05)
-      ..style = PaintingStyle.fill;
+    // Draw dark overlay (full screen)
+    final darkOverlay = Paint()..color = Colors.black.withValues(alpha: 0.65);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), darkOverlay);
 
-    final path = Path();
+    // Calculate silhouette dimensions (centered, proper proportions)
+    final silhouetteHeight = size.height * 0.70; // 70% of screen
+    final silhouetteWidth = isFrontMode
+        ? silhouetteHeight * 0.35 // Front: narrow (shoulders width)
+        : silhouetteHeight * 0.42; // Side: slightly wider
 
+    final centerX = size.width / 2;
+    final startY = (size.height - silhouetteHeight) / 2 + size.height * 0.05;
+
+    // Create professional human silhouette path
+    final silhouettePath = Path();
     if (isFrontMode) {
-      _drawFrontSilhouette(path, size);
+      _drawProfessionalFrontSilhouette(
+          silhouettePath, centerX, startY, silhouetteWidth, silhouetteHeight);
     } else {
-      _drawSideSilhouette(path, size);
+      _drawProfessionalSideSilhouette(
+          silhouettePath, centerX, startY, silhouetteWidth, silhouetteHeight);
     }
 
-    // Draw filled silhouette
-    canvas.drawPath(path, fillPaint);
+    // Cut out silhouette from dark overlay (spotlight effect)
+    canvas.drawPath(
+      silhouettePath,
+      Paint()
+        ..color = Colors.transparent
+        ..blendMode = BlendMode.clear,
+    );
 
-    // Draw outline
-    canvas.drawPath(path, paint);
+    // Draw silhouette outline
+    final outlineColor = isReady
+        ? Colors.green.withValues(alpha: 0.8)
+        : Colors.white.withValues(alpha: 0.35);
 
-    // Draw dashed guide lines
-    _drawGuideLines(canvas, size);
+    canvas.drawPath(
+      silhouettePath,
+      Paint()
+        ..color = outlineColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+
+    // Draw subtle fill inside silhouette
+    canvas.drawPath(
+      silhouettePath,
+      Paint()
+        ..color = outlineColor.withValues(alpha: 0.08)
+        ..style = PaintingStyle.fill,
+    );
+
+    // Draw guide lines (shoulders, hips, knees, feet baseline)
+    _drawGuideLines(canvas, centerX, startY, silhouetteWidth, silhouetteHeight,
+        outlineColor);
   }
 
-  void _drawFrontSilhouette(Path path, Size size) {
-    final centerX = size.width / 2;
-    final shoulderWidth = size.width * 0.4;
-    final hipWidth = size.width * 0.35;
+  void _drawProfessionalFrontSilhouette(
+      Path path, double centerX, double startY, double width, double height) {
+    // Human proportions (privacy-safe: shoulders → feet)
+    final shoulderWidth = width * 0.95;
+    final hipWidth = width * 0.85;
+    final kneeWidth = width * 0.50;
+    final ankleWidth = width * 0.40;
 
-    // Start from shoulders (NO HEAD/NECK)
-    path.moveTo(centerX - shoulderWidth / 2, size.height * 0.15);
+    // Vertical positions
+    final shoulderY = startY;
+    final waistY = startY + height * 0.30;
+    final hipY = startY + height * 0.35;
+    final kneeY = startY + height * 0.65;
+    final ankleY = startY + height * 0.95;
+    final footY = startY + height;
 
-    // Left shoulder to hip
-    path.lineTo(centerX - hipWidth / 2, size.height * 0.45);
+    // Start from left shoulder
+    path.moveTo(centerX - shoulderWidth / 2, shoulderY);
 
-    // Left hip to left knee
-    path.lineTo(centerX - hipWidth / 3, size.height * 0.70);
+    // Left side (shoulder → waist → hip → knee → ankle → foot)
+    path.quadraticBezierTo(
+      centerX - shoulderWidth / 2.2,
+      waistY,
+      centerX - hipWidth / 2,
+      hipY,
+    );
+    path.lineTo(centerX - kneeWidth / 2, kneeY);
+    path.lineTo(centerX - ankleWidth / 2, ankleY);
+    path.lineTo(centerX - ankleWidth / 2.5, footY);
 
-    // Left knee to left ankle
-    path.lineTo(centerX - shoulderWidth / 4, size.height * 0.95);
+    // Bottom (feet gap)
+    path.lineTo(centerX + ankleWidth / 2.5, footY);
 
-    // Bottom feet gap
-    path.lineTo(centerX + shoulderWidth / 4, size.height * 0.95);
+    // Right side (foot → ankle → knee → hip → waist → shoulder)
+    path.lineTo(centerX + ankleWidth / 2, ankleY);
+    path.lineTo(centerX + kneeWidth / 2, kneeY);
+    path.lineTo(centerX + hipWidth / 2, hipY);
+    path.quadraticBezierTo(
+      centerX + shoulderWidth / 2.2,
+      waistY,
+      centerX + shoulderWidth / 2,
+      shoulderY,
+    );
 
-    // Right ankle to right knee
-    path.lineTo(centerX + hipWidth / 3, size.height * 0.70);
-
-    // Right knee to right hip
-    path.lineTo(centerX + hipWidth / 2, size.height * 0.45);
-
-    // Right hip to right shoulder
-    path.lineTo(centerX + shoulderWidth / 2, size.height * 0.15);
-
-    // Close at shoulders
     path.close();
   }
 
-  void _drawSideSilhouette(Path path, Size size) {
-    final shoulderX = size.width * 0.4;
-    final bodyDepth = size.width * 0.25;
+  void _drawProfessionalSideSilhouette(
+      Path path, double centerX, double startY, double width, double height) {
+    // Side view proportions (90° turn)
+    final chestDepth = width * 0.55;
+    final hipDepth = width * 0.50;
+    final legThickness = width * 0.35;
 
-    // Start from back shoulder (NO HEAD)
-    path.moveTo(shoulderX - bodyDepth * 0.3, size.height * 0.15);
+    // Vertical positions
+    final shoulderY = startY;
+    final chestY = startY + height * 0.20;
+    final waistY = startY + height * 0.30;
+    final hipY = startY + height * 0.35;
+    final kneeY = startY + height * 0.65;
+    final ankleY = startY + height * 0.95;
+    final footY = startY + height;
 
-    // Back shoulder to back hip
-    path.lineTo(shoulderX - bodyDepth * 0.2, size.height * 0.45);
+    // Start from back shoulder
+    path.moveTo(centerX - chestDepth * 0.25, shoulderY);
 
-    // Back hip to back knee
-    path.lineTo(shoulderX - bodyDepth * 0.1, size.height * 0.70);
+    // Back profile (shoulder → chest → waist → hip → back leg)
+    path.quadraticBezierTo(
+      centerX - chestDepth * 0.15,
+      chestY,
+      centerX - hipDepth * 0.15,
+      waistY,
+    );
+    path.lineTo(centerX - hipDepth * 0.10, hipY);
+    path.lineTo(centerX - legThickness * 0.15, kneeY);
+    path.lineTo(centerX - legThickness * 0.10, ankleY);
+    path.lineTo(centerX, footY);
 
-    // Back knee to back ankle
-    path.lineTo(shoulderX, size.height * 0.95);
+    // Front profile (front leg → knee → hip → waist → chest → shoulder)
+    path.lineTo(centerX + legThickness * 0.25, ankleY);
+    path.lineTo(centerX + legThickness * 0.30, kneeY);
+    path.lineTo(centerX + hipDepth * 0.35, hipY);
+    path.quadraticBezierTo(
+      centerX + hipDepth * 0.40,
+      waistY,
+      centerX + chestDepth * 0.45,
+      chestY,
+    );
+    path.quadraticBezierTo(
+      centerX + chestDepth * 0.40,
+      shoulderY,
+      centerX + chestDepth * 0.30,
+      shoulderY,
+    );
 
-    // Front ankle to front knee
-    path.lineTo(shoulderX + bodyDepth * 0.3, size.height * 0.70);
-
-    // Front knee to front hip
-    path.lineTo(shoulderX + bodyDepth * 0.4, size.height * 0.45);
-
-    // Front hip to front shoulder
-    path.lineTo(shoulderX + bodyDepth * 0.5, size.height * 0.15);
-
-    // Close path
     path.close();
   }
 
-  void _drawGuideLines(Canvas canvas, Size size) {
+  void _drawGuideLines(Canvas canvas, double centerX, double startY,
+      double width, double height, Color color) {
     final guidePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.3)
+      ..color = color.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    // Horizontal guide lines (shoulders, hips, knees, feet)
-    final guides = [0.15, 0.45, 0.70, 0.95];
-    for (final ratio in guides) {
-      final y = size.height * ratio;
+    // Horizontal guide lines with labels
+    final guides = [
+      (0.0, 'Shoulders'),
+      (0.35, 'Hips'),
+      (0.65, 'Knees'),
+      (1.0, 'Feet'),
+    ];
+
+    for (final guide in guides) {
+      final y = startY + height * guide.$1;
       _drawDashedLine(
         canvas,
-        Offset(0, y),
-        Offset(size.width, y),
+        Offset(centerX - width * 0.6, y),
+        Offset(centerX + width * 0.6, y),
         guidePaint,
       );
     }
@@ -387,7 +470,7 @@ class _BodySilhouettePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BodySilhouettePainter oldDelegate) {
+  bool shouldRepaint(_SafeCropMaskPainter oldDelegate) {
     return oldDelegate.isFrontMode != isFrontMode ||
         oldDelegate.validationState != validationState;
   }
