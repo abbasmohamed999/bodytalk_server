@@ -27,7 +27,7 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
   bool _isInitialized = false;
-  LiveValidationState _validationState = LiveValidationState.NO_PERSON;
+  LiveValidationState _validationState = LiveValidationState.noPerson;
   String? _guidanceText;
   LivePoseValidator? _poseValidator;
   Timer? _validationTimer;
@@ -278,7 +278,7 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
               right: 0,
               child: Center(
                 child: GestureDetector(
-                  onTap: _validationState == LiveValidationState.OK_READY
+                  onTap: _validationState == LiveValidationState.okReady
                       ? _capturePhoto
                       : null,
                   child: Container(
@@ -286,11 +286,11 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _validationState == LiveValidationState.OK_READY
+                      color: _validationState == LiveValidationState.okReady
                           ? Colors.white
                           : Colors.white.withValues(alpha: 0.3),
                       border: Border.all(
-                        color: _validationState == LiveValidationState.OK_READY
+                        color: _validationState == LiveValidationState.okReady
                             ? Colors.green
                             : Colors.white.withValues(alpha: 0.5),
                         width: 4,
@@ -306,7 +306,7 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
                     child: Icon(
                       Icons.camera_alt,
                       size: 40,
-                      color: _validationState == LiveValidationState.OK_READY
+                      color: _validationState == LiveValidationState.okReady
                           ? primaryBlue
                           : Colors.white54,
                     ),
@@ -316,7 +316,7 @@ class _BodyCameraPageState extends State<BodyCameraPage> {
             ),
 
             // Capture hint
-            if (_validationState != LiveValidationState.OK_READY)
+            if (_validationState != LiveValidationState.okReady)
               Positioned(
                 bottom: 130,
                 left: 0,

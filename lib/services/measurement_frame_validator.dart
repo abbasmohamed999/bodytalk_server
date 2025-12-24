@@ -39,14 +39,13 @@ class MeasurementFrameResult {
 }
 
 class MeasurementFrameValidator {
-  /// Compute the measurement frame rect (same as in BodyOverlayPainter)
+  /// Compute the measurement frame rect (same as in ProBodyOverlayPainter)
   static Rect computeFrameRect(Size imageSize) {
-    final w = imageSize.width * 0.62;
-    final h = imageSize.height * 0.62;
-
-    final left = (imageSize.width - w) / 2;
-    final top = imageSize.height * 0.22;
-    return Rect.fromLTWH(left, top, w, h);
+    // Frame size ratios (0.72 x 0.78 of screen, centered)
+    final frameW = imageSize.width * 0.72;
+    final frameH = imageSize.height * 0.78;
+    final center = Offset(imageSize.width / 2, imageSize.height / 2);
+    return Rect.fromCenter(center: center, width: frameW, height: frameH);
   }
 
   /// Validate that body parts are within the measurement frame
@@ -102,19 +101,19 @@ class MeasurementFrameValidator {
           'Step back - body too large/cropped');
     }
 
-    // B) Strict Rules: Ankles Position
-    // anklesY must be between frameRect.bottom - 4% and frameRect.bottom - 0%
+    // B) Strict Rules: Ankles/Feet Position
+    // anklesY must be around frameRect.top + 92% (matching kFeetY = 0.92)
     final anklesRelativeY = (anklesY - frameRect.top) / frameRect.height;
-    if (anklesRelativeY < 0.88) {
+    if (anklesRelativeY < 0.86) {
       return MeasurementFrameResult.invalid(
           'Move down - feet too high in frame');
     }
-    if (anklesRelativeY > 0.96) {
+    if (anklesRelativeY > 0.98) {
       return MeasurementFrameResult.invalid('Move up - feet cut off at bottom');
     }
 
     // C) Strict Rules: Hips Position
-    // hipsY must be around frameRect.top + 52% ± 6%
+    // hipsY must be around frameRect.top + 52% (matching kHipsY = 0.52)
     final hipsRelativeY = (hipsY - frameRect.top) / frameRect.height;
     if (hipsRelativeY < 0.46 || hipsRelativeY > 0.58) {
       return MeasurementFrameResult.invalid(
@@ -122,9 +121,9 @@ class MeasurementFrameValidator {
     }
 
     // D) Strict Rules: Shoulders Position
-    // shouldersY must be around frameRect.top + 18% ± 6%
+    // shouldersY must be around frameRect.top + 23% (matching kShouldersY = 0.23)
     final shouldersRelativeY = (shouldersY - frameRect.top) / frameRect.height;
-    if (shouldersRelativeY < 0.12 || shouldersRelativeY > 0.24) {
+    if (shouldersRelativeY < 0.17 || shouldersRelativeY > 0.29) {
       return MeasurementFrameResult.invalid(
           'Adjust position - shoulders not aligned with guide');
     }

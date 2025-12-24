@@ -181,6 +181,7 @@ class _BodyAnalysisCapturePageState extends State<BodyAnalysisCapturePage> {
     });
 
     try {
+      // ignore: use_build_context_synchronously
       final currentLang = BodyTalkApp.getLocaleCode(context) ?? 'en';
       final data = await ApiService.analyzeBodyTwoImages(
         _frontImage!,

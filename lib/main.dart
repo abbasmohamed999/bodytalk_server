@@ -13,7 +13,6 @@ import 'services/api_service.dart';
 import 'pages/splash_screen.dart';
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
-import 'pages/result_page.dart';
 
 Future<void> main() async {
   // تهيئة Flutter قبل أي شيء (ضروري مع async)
@@ -188,7 +187,6 @@ class _BodyTalkAppState extends State<BodyTalkApp> {
         SplashScreen.routeName: (_) => const SplashScreen(),
         LoginPage.routeName: (_) => const LoginPage(),
         HomePage.routeName: (_) => const HomePage(),
-        ResultPage.routeName: (_) => const ResultPage(result: {}),
       },
     );
   }

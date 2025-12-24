@@ -1300,13 +1300,17 @@ class _ProfilePageState extends State<ProfilePage> {
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool('notifications_enabled', v);
                           if (!mounted) return;
+                          // ignore: use_build_context_synchronously
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
+                              // ignore: use_build_context_synchronously
                               content: Text(v
+                                  // ignore: use_build_context_synchronously
                                   ? BodyTalkApp.tr(context,
                                       en: 'Notifications enabled 🔔',
                                       fr: 'Notifications activées 🔔',
                                       ar: 'تم تفعيل الإشعارات 🔔')
+                                  // ignore: use_build_context_synchronously
                                   : BodyTalkApp.tr(context,
                                       en: 'Notifications disabled',
                                       fr: 'Notifications désactivées',
@@ -1400,14 +1404,19 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         value: _autoSyncPlan,
                         onChanged: (v) async {
+                          if (!mounted) return;
                           setState(() => _autoSyncPlan = v);
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool('auto_sync_plan', v);
+                          if (!mounted) return;
+                          // ignore: use_build_context_synchronously
                           _showSoonSnack(v
+                              // ignore: use_build_context_synchronously
                               ? BodyTalkApp.tr(context,
                                   en: 'Auto-sync enabled ✅',
                                   fr: 'Synchronisation automatique activée ✅',
                                   ar: 'تم تفعيل المزامنة التلقائية بين الخطط ✅')
+                              // ignore: use_build_context_synchronously
                               : BodyTalkApp.tr(context,
                                   en: 'Auto-sync disabled',
                                   fr: 'Synchronisation automatique désactivée',
@@ -1446,14 +1455,17 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         value: _biometricEnabled,
                         onChanged: (v) async {
+                          if (!mounted) return;
                           if (v) {
                             // Check if biometric is available
                             final canUse = await FaceAuthService.instance
                                 .canCheckBiometrics();
                             if (!canUse) {
                               if (!mounted) return;
+                              // ignore: use_build_context_synchronously
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
+                                  // ignore: use_build_context_synchronously
                                   content: Text(BodyTalkApp.tr(context,
                                       en: 'Biometric authentication not available on this device.',
                                       fr: "L'authentification biométrique n'est pas disponible sur cet appareil.",
@@ -1464,8 +1476,10 @@ class _ProfilePageState extends State<ProfilePage> {
                               return;
                             }
                             // Test authentication
+                            // ignore: use_build_context_synchronously
                             final authenticated =
                                 await FaceAuthService.instance.authenticate(
+                              // ignore: use_build_context_synchronously
                               reason: BodyTalkApp.tr(context,
                                   en: 'Verify to enable biometric login',
                                   fr: 'Vérifiez pour activer la connexion biométrique',
@@ -1473,8 +1487,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             );
                             if (!authenticated) {
                               if (!mounted) return;
+                              // ignore: use_build_context_synchronously
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
+                                  // ignore: use_build_context_synchronously
                                   content: Text(BodyTalkApp.tr(context,
                                       en: 'Biometric verification failed.',
                                       fr: 'Échec de la vérification biométrique.',
@@ -1489,13 +1505,17 @@ class _ProfilePageState extends State<ProfilePage> {
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool('biometric_enabled', v);
                           if (!mounted) return;
+                          // ignore: use_build_context_synchronously
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
+                              // ignore: use_build_context_synchronously
                               content: Text(v
+                                  // ignore: use_build_context_synchronously
                                   ? BodyTalkApp.tr(context,
                                       en: 'Biometric login enabled ✅',
                                       fr: 'Connexion biométrique activée ✅',
                                       ar: 'تم تفعيل تسجيل الدخول بالبصمة ✅')
+                                  // ignore: use_build_context_synchronously
                                   : BodyTalkApp.tr(context,
                                       en: 'Biometric login disabled',
                                       fr: 'Connexion biométrique désactivée',
@@ -1666,13 +1686,16 @@ class _ProfilePageState extends State<ProfilePage> {
                               width: double.infinity,
                               child: ElevatedButton.icon(
                                 onPressed: () async {
+                                  if (!mounted) return;
                                   final result = await ApiService
                                       .activateTestSubscription();
                                   if (!mounted) return;
                                   if (result != null &&
                                       result['is_active'] == true) {
+                                    // ignore: use_build_context_synchronously
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
+                                        // ignore: use_build_context_synchronously
                                         content: Text(BodyTalkApp.tr(context,
                                             en: 'Test subscription activated! ✅',
                                             fr: 'Abonnement test activé! ✅',
@@ -1682,8 +1705,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                     );
                                     _loadUserProfile();
                                   } else {
+                                    // ignore: use_build_context_synchronously
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
+                                        // ignore: use_build_context_synchronously
                                         content: Text(BodyTalkApp.tr(context,
                                             en: 'Failed to activate subscription',
                                             fr: "Échec de l'activation",

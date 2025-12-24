@@ -1,44 +1,45 @@
 // lib/widgets/body_capture_overlay.dart
-// Phase C2.3: Camera Overlay with Body Shape Presets & Measurement Frame
+// Phase C2-FINAL: Professional Human Silhouette Overlay with Cutout Window
 // Privacy-Safe: NO FACE DETECTION, NO FACE REQUIRED
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:bodytalk_app/main.dart';
 import 'package:bodytalk_app/services/live_pose_validator.dart';
-import 'package:bodytalk_app/widgets/body_overlay_painter.dart';
+import 'package:bodytalk_app/widgets/pro_body_overlay_painter.dart';
 
 /// Camera overlay widget that guides users to align their body correctly
-/// Shows different silhouettes for FRONT and SIDE poses with body shape presets
+/// Shows professional human silhouette cutout window (FRONT and SIDE poses)
 /// Privacy-safe: Only shows shoulders, hips, legs - NO FACE
 class BodyCaptureOverlay extends StatelessWidget {
   final bool isFrontMode; // true = front pose, false = side pose
   final LiveValidationState validationState; // Live validation state
   final String? guidanceText; // Real-time guidance message
-  final BodyShapePreset bodyPreset; // Body shape preset (slim/normal/heavy)
+  final BodyPreset bodyPreset; // Body shape preset (slim/normal/heavy)
 
   const BodyCaptureOverlay({
     super.key,
     required this.isFrontMode,
-    this.validationState = LiveValidationState.NO_PERSON,
+    this.validationState = LiveValidationState.noPerson,
     this.guidanceText,
-    this.bodyPreset = BodyShapePreset.normal,
+    this.bodyPreset = BodyPreset.normal,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isReady = validationState == LiveValidationState.OK_READY;
+    final isReady = validationState == LiveValidationState.okReady;
 
     return Stack(
       children: [
-        // Professional body overlay with measurement frame
+        // Professional body overlay with silhouette cutout window
         Positioned.fill(
           child: CustomPaint(
-            painter: BodyOverlayPainter(
+            painter: ProBodyOverlayPainter(
               mode: isFrontMode ? BodyOverlayMode.front : BodyOverlayMode.side,
               preset: bodyPreset,
-              dimOpacity: 0.22, // Higher transparency
               isReady: isReady,
+              dimOpacity: 0.16, // Higher transparency (0.14-0.20)
+              strokeOpacity: 0.75,
             ),
           ),
         ),

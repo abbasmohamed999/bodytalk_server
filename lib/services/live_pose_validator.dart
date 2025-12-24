@@ -9,12 +9,12 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 enum LiveValidationState {
-  NO_PERSON,
-  PARTIAL_BODY,
-  WRONG_ORIENTATION,
-  TOO_CLOSE,
-  TOO_FAR,
-  OK_READY,
+  noPerson,
+  partialBody,
+  wrongOrientation,
+  tooClose,
+  tooFar,
+  okReady,
 }
 
 class LivePoseValidationResult {
@@ -62,7 +62,7 @@ class LivePoseValidator {
       final inputImage = _convertCameraImage(image);
       if (inputImage == null) {
         return LivePoseValidationResult(
-          state: LiveValidationState.NO_PERSON,
+          state: LiveValidationState.noPerson,
           guidanceKey: 'no_person_detected',
         );
       }
@@ -72,14 +72,14 @@ class LivePoseValidator {
 
       if (poses.isEmpty) {
         return LivePoseValidationResult(
-          state: LiveValidationState.NO_PERSON,
+          state: LiveValidationState.noPerson,
           guidanceKey: 'step_into_frame',
         );
       }
 
       if (poses.length > 1) {
         return LivePoseValidationResult(
-          state: LiveValidationState.NO_PERSON,
+          state: LiveValidationState.noPerson,
           guidanceKey: 'multiple_persons_detected',
         );
       }
@@ -90,7 +90,7 @@ class LivePoseValidator {
       final essentialParts = _checkEssentialBodyParts(pose);
       if (!essentialParts['hasMinimumParts']!) {
         return LivePoseValidationResult(
-          state: LiveValidationState.PARTIAL_BODY,
+          state: LiveValidationState.partialBody,
           guidanceKey: essentialParts['guidanceKey']!,
         );
       }
@@ -100,14 +100,14 @@ class LivePoseValidator {
           _calculateBodyHeightRatio(pose, image.height.toDouble());
       if (bodyHeightRatio < minBodyHeightRatio) {
         return LivePoseValidationResult(
-          state: LiveValidationState.TOO_FAR,
+          state: LiveValidationState.tooFar,
           guidanceKey: 'step_closer_full_body',
           bodyHeightRatio: bodyHeightRatio,
         );
       }
       if (bodyHeightRatio > maxBodyHeightRatio) {
         return LivePoseValidationResult(
-          state: LiveValidationState.TOO_CLOSE,
+          state: LiveValidationState.tooClose,
           guidanceKey: 'step_back_full_body',
           bodyHeightRatio: bodyHeightRatio,
         );
@@ -117,7 +117,7 @@ class LivePoseValidator {
       final orientationValid = _checkOrientation(pose);
       if (!orientationValid) {
         return LivePoseValidationResult(
-          state: LiveValidationState.WRONG_ORIENTATION,
+          state: LiveValidationState.wrongOrientation,
           guidanceKey:
               isFrontMode ? 'face_camera_directly' : 'turn_sideways_90',
         );
@@ -125,13 +125,13 @@ class LivePoseValidator {
 
       // All checks passed - OK to capture
       return LivePoseValidationResult(
-        state: LiveValidationState.OK_READY,
+        state: LiveValidationState.okReady,
         guidanceKey: 'ready_to_capture',
         bodyHeightRatio: bodyHeightRatio,
       );
     } catch (e) {
       return LivePoseValidationResult(
-        state: LiveValidationState.NO_PERSON,
+        state: LiveValidationState.noPerson,
         guidanceKey: 'detection_error',
       );
     }
@@ -273,7 +273,7 @@ class LivePoseValidator {
       }
       final bytes = allBytes.toBytes();
 
-      final imageRotation = InputImageRotation.rotation0deg;
+      const imageRotation = InputImageRotation.rotation0deg;
 
       final inputImageData = InputImageMetadata(
         size: Size(image.width.toDouble(), image.height.toDouble()),
