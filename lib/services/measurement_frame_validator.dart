@@ -44,7 +44,7 @@ class MeasurementFrameValidator {
   static Rect computeFrameRect(Size imageSize) {
     final sw = imageSize.width;
     final sh = imageSize.height;
-    final frameTop = sh * 0.10; // Frame starts at 10% from top
+    final frameTop = sh * BodyOverlaySpec.frameTopFrac;
     final frameH = sh * BodyOverlaySpec.frameHFrac;
     final frameW = sw * BodyOverlaySpec.frameWFrac;
     final frameLeft = (sw - frameW) / 2;
@@ -94,41 +94,39 @@ class MeasurementFrameValidator {
     // Calculate height ratio within frame
     final heightRatio = bodyPixelHeight / frameRect.height;
 
-    // A) Strict Rules: Height Ratio
-    if (heightRatio < 0.75) {
+    // A) Strict Rules: Height Ratio (more lenient for full-body view)
+    if (heightRatio < 0.65) {
       return MeasurementFrameResult.invalid(
           'Step closer - body too small in frame');
     }
-    if (heightRatio > 0.95) {
+    if (heightRatio > 1.05) {
       return MeasurementFrameResult.invalid(
           'Step back - body too large/cropped');
     }
 
-    // B) Strict Rules: Ankles/Feet Position
-    // anklesY must be around frameRect.top + 92% (matching BodyOverlaySpec.feetY)
+    // B) Strict Rules: Ankles/Feet Position (more tolerance for full screen)
+    // anklesY must be around feetY guide line
     final anklesRelativeY = (anklesY - frameRect.top) / frameRect.height;
-    if (anklesRelativeY < (BodyOverlaySpec.feetY - 0.06)) {
+    if (anklesRelativeY < (BodyOverlaySpec.feetY - 0.10)) {
       return MeasurementFrameResult.invalid(
           'Move down - feet too high in frame');
     }
-    if (anklesRelativeY > (BodyOverlaySpec.feetY + 0.06)) {
+    if (anklesRelativeY > 1.02) {
       return MeasurementFrameResult.invalid('Move up - feet cut off at bottom');
     }
 
-    // C) Strict Rules: Hips Position
-    // hipsY must be around frameRect.top + 52% (matching BodyOverlaySpec.hipsY)
+    // C) Strict Rules: Hips Position (more tolerance)
     final hipsRelativeY = (hipsY - frameRect.top) / frameRect.height;
-    if (hipsRelativeY < (BodyOverlaySpec.hipsY - 0.06) ||
-        hipsRelativeY > (BodyOverlaySpec.hipsY + 0.06)) {
+    if (hipsRelativeY < (BodyOverlaySpec.hipsY - 0.10) ||
+        hipsRelativeY > (BodyOverlaySpec.hipsY + 0.10)) {
       return MeasurementFrameResult.invalid(
           'Adjust position - hips not aligned with guide');
     }
 
-    // D) Strict Rules: Shoulders Position
-    // shouldersY must be around frameRect.top + 23% (matching BodyOverlaySpec.shouldersY)
+    // D) Strict Rules: Shoulders Position (more tolerance)
     final shouldersRelativeY = (shouldersY - frameRect.top) / frameRect.height;
-    if (shouldersRelativeY < (BodyOverlaySpec.shouldersY - 0.06) ||
-        shouldersRelativeY > (BodyOverlaySpec.shouldersY + 0.06)) {
+    if (shouldersRelativeY < (BodyOverlaySpec.shouldersY - 0.10) ||
+        shouldersRelativeY > (BodyOverlaySpec.shouldersY + 0.10)) {
       return MeasurementFrameResult.invalid(
           'Adjust position - shoulders not aligned with guide');
     }
