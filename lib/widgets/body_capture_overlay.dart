@@ -1,12 +1,12 @@
 // lib/widgets/body_capture_overlay.dart
-// Phase C2-FINAL: Professional Human Silhouette Overlay with Cutout Window
+// C2-FINAL: Professional Measurement Frame Overlay
 // Privacy-Safe: NO FACE DETECTION, NO FACE REQUIRED
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:bodytalk_app/main.dart';
 import 'package:bodytalk_app/services/live_pose_validator.dart';
-import 'package:bodytalk_app/widgets/pro_body_overlay_painter.dart';
+import 'package:bodytalk_app/widgets/pro_measurement_overlay_painter.dart';
 
 /// Camera overlay widget that guides users to align their body correctly
 /// Shows professional human silhouette cutout window (FRONT and SIDE poses)
@@ -31,15 +31,13 @@ class BodyCaptureOverlay extends StatelessWidget {
 
     return Stack(
       children: [
-        // Professional body overlay with silhouette cutout window
+        // Professional measurement frame overlay
         Positioned.fill(
           child: CustomPaint(
-            painter: ProBodyOverlayPainter(
+            painter: ProMeasurementOverlayPainter(
               mode: isFrontMode ? BodyOverlayMode.front : BodyOverlayMode.side,
               preset: bodyPreset,
               isReady: isReady,
-              dimOpacity: 0.16, // Higher transparency (0.14-0.20)
-              strokeOpacity: 0.75,
             ),
           ),
         ),

@@ -1,9 +1,10 @@
 // lib/services/measurement_frame_validator.dart
 // Strict measurement frame validation for body analysis
-// Ensures body parts are within correct positions in the frame
+// Uses EXACT same frame and guide line positions as ProMeasurementOverlayPainter
 
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:bodytalk_app/widgets/pro_measurement_overlay_painter.dart';
 
 /// Validation result for measurement frame
 class MeasurementFrameResult {
@@ -39,13 +40,15 @@ class MeasurementFrameResult {
 }
 
 class MeasurementFrameValidator {
-  /// Compute the measurement frame rect (same as in ProBodyOverlayPainter)
+  /// Compute the measurement frame rect (EXACT same as ProMeasurementOverlayPainter)
   static Rect computeFrameRect(Size imageSize) {
-    // Frame size ratios (0.72 x 0.78 of screen, centered)
-    final frameW = imageSize.width * 0.72;
-    final frameH = imageSize.height * 0.78;
-    final center = Offset(imageSize.width / 2, imageSize.height / 2);
-    return Rect.fromCenter(center: center, width: frameW, height: frameH);
+    final sw = imageSize.width;
+    final sh = imageSize.height;
+    final frameW = sw * BodyOverlaySpec.frameWFrac;
+    final frameH = sh * BodyOverlaySpec.frameHFrac;
+    final frameLeft = (sw - frameW) / 2;
+    final frameTop = (sh - frameH) / 2;
+    return Rect.fromLTWH(frameLeft, frameTop, frameW, frameH);
   }
 
   /// Validate that body parts are within the measurement frame
@@ -102,28 +105,30 @@ class MeasurementFrameValidator {
     }
 
     // B) Strict Rules: Ankles/Feet Position
-    // anklesY must be around frameRect.top + 92% (matching kFeetY = 0.92)
+    // anklesY must be around frameRect.top + 92% (matching BodyOverlaySpec.feetY)
     final anklesRelativeY = (anklesY - frameRect.top) / frameRect.height;
-    if (anklesRelativeY < 0.86) {
+    if (anklesRelativeY < (BodyOverlaySpec.feetY - 0.06)) {
       return MeasurementFrameResult.invalid(
           'Move down - feet too high in frame');
     }
-    if (anklesRelativeY > 0.98) {
+    if (anklesRelativeY > (BodyOverlaySpec.feetY + 0.06)) {
       return MeasurementFrameResult.invalid('Move up - feet cut off at bottom');
     }
 
     // C) Strict Rules: Hips Position
-    // hipsY must be around frameRect.top + 52% (matching kHipsY = 0.52)
+    // hipsY must be around frameRect.top + 52% (matching BodyOverlaySpec.hipsY)
     final hipsRelativeY = (hipsY - frameRect.top) / frameRect.height;
-    if (hipsRelativeY < 0.46 || hipsRelativeY > 0.58) {
+    if (hipsRelativeY < (BodyOverlaySpec.hipsY - 0.06) ||
+        hipsRelativeY > (BodyOverlaySpec.hipsY + 0.06)) {
       return MeasurementFrameResult.invalid(
           'Adjust position - hips not aligned with guide');
     }
 
     // D) Strict Rules: Shoulders Position
-    // shouldersY must be around frameRect.top + 23% (matching kShouldersY = 0.23)
+    // shouldersY must be around frameRect.top + 23% (matching BodyOverlaySpec.shouldersY)
     final shouldersRelativeY = (shouldersY - frameRect.top) / frameRect.height;
-    if (shouldersRelativeY < 0.17 || shouldersRelativeY > 0.29) {
+    if (shouldersRelativeY < (BodyOverlaySpec.shouldersY - 0.06) ||
+        shouldersRelativeY > (BodyOverlaySpec.shouldersY + 0.06)) {
       return MeasurementFrameResult.invalid(
           'Adjust position - shoulders not aligned with guide');
     }

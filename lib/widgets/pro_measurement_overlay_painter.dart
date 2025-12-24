@@ -1,0 +1,441 @@
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+
+enum BodyOverlayMode { front, side }
+
+enum BodyPreset { slim, normal, heavy }
+
+class BodyOverlaySpec {
+  // Frame in screen space
+  static const double frameWFrac = 0.72;
+  static const double frameHFrac = 0.78;
+
+  // Guide lines in frame space (0..1)
+  static const double shouldersY = 0.23;
+  static const double hipsY = 0.52;
+  static const double feetY = 0.92;
+  static const double centerX = 0.50;
+
+  static const double dimOpacity = 0.16;
+  static const double outlineOpacity = 0.75;
+  static const double guideOpacity = 0.65;
+
+  static double presetScale(BodyPreset p) {
+    switch (p) {
+      case BodyPreset.slim:
+        return 0.90;
+      case BodyPreset.normal:
+        return 1.00;
+      case BodyPreset.heavy:
+        return 1.12;
+    }
+  }
+}
+
+class ProMeasurementOverlayPainter extends CustomPainter {
+  ProMeasurementOverlayPainter({
+    required this.mode,
+    required this.preset,
+    required this.isReady,
+  });
+
+  final BodyOverlayMode mode;
+  final BodyPreset preset;
+  final bool isReady;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final sw = size.width;
+    final sh = size.height;
+
+    final frameW = sw * BodyOverlaySpec.frameWFrac;
+    final frameH = sh * BodyOverlaySpec.frameHFrac;
+    final frameLeft = (sw - frameW) / 2;
+    final frameTop = (sh - frameH) / 2;
+    final frameRect = Rect.fromLTWH(frameLeft, frameTop, frameW, frameH);
+
+    // Background dim layer
+    final dimPaint = Paint()
+      ..color = Colors.black.withOpacity(BodyOverlaySpec.dimOpacity)
+      ..style = PaintingStyle.fill;
+
+    // Silhouette cutout path (in screen coords)
+    final cutout = _buildSilhouettePath(frameRect, mode, preset);
+
+    // Dim everywhere EXCEPT silhouette window
+    final full = Path()..addRect(Rect.fromLTWH(0, 0, sw, sh));
+    final overlay = Path.combine(PathOperation.difference, full, cutout);
+    canvas.drawPath(overlay, dimPaint);
+
+    // Frame subtle border (optional)
+    final frameBorder = Paint()
+      ..color = Colors.white.withOpacity(0.20)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(frameRect, const Radius.circular(18)),
+      frameBorder,
+    );
+
+    // Silhouette outline
+    final outlinePaint = Paint()
+      ..color = (isReady ? const Color(0xFF39D98A) : Colors.white)
+          .withOpacity(BodyOverlaySpec.outlineOpacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawPath(cutout, outlinePaint);
+
+    // Guide lines (dashed)
+    final guidePaint = Paint()
+      ..color = Colors.white.withOpacity(BodyOverlaySpec.guideOpacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2;
+
+    final yShoulders = frameTop + BodyOverlaySpec.shouldersY * frameH;
+    final yHips = frameTop + BodyOverlaySpec.hipsY * frameH;
+    final yFeet = frameTop + BodyOverlaySpec.feetY * frameH;
+    final xCenter = frameLeft + BodyOverlaySpec.centerX * frameW;
+
+    _drawDashedLine(
+      canvas,
+      Offset(frameLeft + 16, yShoulders),
+      Offset(frameLeft + frameW - 16, yShoulders),
+      guidePaint,
+    );
+    _drawDashedLine(
+      canvas,
+      Offset(frameLeft + 16, yHips),
+      Offset(frameLeft + frameW - 16, yHips),
+      guidePaint,
+    );
+    _drawDashedLine(
+      canvas,
+      Offset(frameLeft + 16, yFeet),
+      Offset(frameLeft + frameW - 16, yFeet),
+      guidePaint,
+    );
+    _drawDashedLine(
+      canvas,
+      Offset(xCenter, frameTop + 16),
+      Offset(xCenter, frameTop + frameH - 16),
+      guidePaint,
+    );
+  }
+
+  Path _buildSilhouettePath(
+      Rect frame, BodyOverlayMode mode, BodyPreset preset) {
+    final w = frame.width;
+    final h = frame.height;
+    final cx = frame.center.dx;
+
+    // Width scaling for body types (slim/normal/heavy)
+    final scaleX = BodyOverlaySpec.presetScale(preset);
+
+    // We intentionally do NOT require face; head is just a neutral oval marker.
+    // Head center placed at ~0.12h, shoulders at 0.23h (matches guide line)
+    final headCY = frame.top + 0.12 * h;
+    final shouldersY = frame.top + BodyOverlaySpec.shouldersY * h;
+
+    // Base widths (in frame coords), then scaled
+    final shoulderHalf = 0.22 * w * scaleX; // half width at shoulders
+    final waistHalf = 0.15 * w * scaleX;
+    final hipsHalf = 0.20 * w * scaleX;
+    final ankleHalf = 0.08 * w * scaleX;
+
+    // Y landmarks
+    final chestY = frame.top + 0.30 * h;
+    final waistY = frame.top + 0.42 * h;
+    final hipsY = frame.top + BodyOverlaySpec.hipsY * h;
+    final kneesY = frame.top + 0.73 * h;
+    final feetY = frame.top + BodyOverlaySpec.feetY * h;
+
+    if (mode == BodyOverlayMode.front) {
+      final p = Path();
+
+      // Head (oval) - neutral marker, not "face"
+      final headR = 0.055 * h;
+      p.addOval(Rect.fromCenter(
+          center: Offset(cx, headCY),
+          width: headR * 1.2,
+          height: headR * 1.35));
+
+      // Body outline: build as one continuous path (left side down, then right side up)
+      final leftShoulder = Offset(cx - shoulderHalf, shouldersY);
+      final rightShoulder = Offset(cx + shoulderHalf, shouldersY);
+
+      final leftChest = Offset(cx - (shoulderHalf * 0.92), chestY);
+      final leftWaist = Offset(cx - waistHalf, waistY);
+      final leftHips = Offset(cx - hipsHalf, hipsY);
+      final leftKnees = Offset(cx - (hipsHalf * 0.55), kneesY);
+      final leftAnkles = Offset(cx - ankleHalf, feetY);
+
+      final rightChest = Offset(cx + (shoulderHalf * 0.92), chestY);
+      final rightWaist = Offset(cx + waistHalf, waistY);
+      final rightHips = Offset(cx + hipsHalf, hipsY);
+      final rightKnees = Offset(cx + (hipsHalf * 0.55), kneesY);
+      final rightAnkles = Offset(cx + ankleHalf, feetY);
+
+      // Start at left shoulder
+      p.moveTo(leftShoulder.dx, leftShoulder.dy);
+
+      // Left shoulder -> chest (smooth)
+      p.cubicTo(
+        cx - shoulderHalf,
+        shouldersY + 0.02 * h,
+        leftChest.dx,
+        leftChest.dy - 0.03 * h,
+        leftChest.dx,
+        leftChest.dy,
+      );
+
+      // Chest -> waist
+      p.cubicTo(
+        leftChest.dx - 0.02 * w,
+        chestY + 0.06 * h,
+        leftWaist.dx - 0.02 * w,
+        waistY - 0.05 * h,
+        leftWaist.dx,
+        leftWaist.dy,
+      );
+
+      // Waist -> hips
+      p.cubicTo(
+        leftWaist.dx - 0.01 * w,
+        waistY + 0.05 * h,
+        leftHips.dx - 0.02 * w,
+        hipsY - 0.04 * h,
+        leftHips.dx,
+        leftHips.dy,
+      );
+
+      // Hips -> knees
+      p.cubicTo(
+        leftHips.dx - 0.01 * w,
+        hipsY + 0.08 * h,
+        leftKnees.dx - 0.02 * w,
+        kneesY - 0.06 * h,
+        leftKnees.dx,
+        leftKnees.dy,
+      );
+
+      // Knees -> ankles/feet
+      p.cubicTo(
+        leftKnees.dx,
+        kneesY + 0.10 * h,
+        leftAnkles.dx - 0.01 * w,
+        feetY - 0.06 * h,
+        leftAnkles.dx,
+        leftAnkles.dy,
+      );
+
+      // Bottom cross (feet)
+      p.lineTo(rightAnkles.dx, rightAnkles.dy);
+
+      // Right side up (ankles -> knees)
+      p.cubicTo(
+        rightAnkles.dx + 0.01 * w,
+        feetY - 0.06 * h,
+        rightKnees.dx,
+        kneesY + 0.10 * h,
+        rightKnees.dx,
+        rightKnees.dy,
+      );
+
+      // Knees -> hips
+      p.cubicTo(
+        rightKnees.dx + 0.02 * w,
+        kneesY - 0.06 * h,
+        rightHips.dx + 0.01 * w,
+        hipsY + 0.08 * h,
+        rightHips.dx,
+        rightHips.dy,
+      );
+
+      // Hips -> waist
+      p.cubicTo(
+        rightHips.dx + 0.02 * w,
+        hipsY - 0.04 * h,
+        rightWaist.dx + 0.01 * w,
+        waistY + 0.05 * h,
+        rightWaist.dx,
+        rightWaist.dy,
+      );
+
+      // Waist -> chest
+      p.cubicTo(
+        rightWaist.dx + 0.02 * w,
+        waistY - 0.05 * h,
+        rightChest.dx + 0.02 * w,
+        chestY + 0.06 * h,
+        rightChest.dx,
+        rightChest.dy,
+      );
+
+      // Chest -> right shoulder
+      p.cubicTo(
+        rightChest.dx,
+        rightChest.dy - 0.03 * h,
+        cx + shoulderHalf,
+        shouldersY + 0.02 * h,
+        rightShoulder.dx,
+        rightShoulder.dy,
+      );
+
+      // Close across neck area (not needed to be anatomically perfect)
+      // Connect shoulder to top near head
+      p.lineTo(cx + shoulderHalf * 0.20, headCY + 0.03 * h);
+      p.lineTo(cx - shoulderHalf * 0.20, headCY + 0.03 * h);
+      p.close();
+
+      return p;
+    }
+
+    // SIDE silhouette
+    final p = Path();
+
+    // Head oval (profile marker)
+    final headR = 0.055 * h;
+    final headCX = frame.left + 0.54 * w;
+    p.addOval(Rect.fromCenter(
+        center: Offset(headCX, headCY),
+        width: headR * 1.15,
+        height: headR * 1.35));
+
+    // Side body: one contour (back) + one contour (front)
+    final backX = frame.left + 0.46 * w;
+    final frontXBase = frame.left + 0.60 * w;
+
+    final chestY = frame.top + 0.30 * h;
+    final waistY = frame.top + 0.44 * h;
+    final hipsY = frame.top + BodyOverlaySpec.hipsY * h;
+    final kneesY = frame.top + 0.73 * h;
+    final feetY = frame.top + BodyOverlaySpec.feetY * h;
+
+    // Belly/hip projection increases with preset
+    final belly = (preset == BodyPreset.heavy)
+        ? 0.08 * w
+        : (preset == BodyPreset.normal ? 0.05 * w : 0.03 * w);
+    final chest = (preset == BodyPreset.heavy) ? 0.06 * w : 0.045 * w;
+
+    final frontShoulder = Offset(frontXBase + chest, shouldersY);
+    final frontChest = Offset(frontXBase + chest, chestY);
+    final frontWaist = Offset(frontXBase + belly, waistY);
+    final frontHips = Offset(frontXBase + belly, hipsY);
+    final frontKnees = Offset(frontXBase + 0.02 * w, kneesY);
+    final frontFeet = Offset(frontXBase + 0.02 * w, feetY);
+
+    final backShoulder = Offset(backX, shouldersY);
+    final backHips = Offset(backX, hipsY);
+    final backKnees = Offset(backX + 0.01 * w, kneesY);
+    final backFeet = Offset(backX + 0.01 * w, feetY);
+
+    // Start at back shoulder
+    p.moveTo(backShoulder.dx, backShoulder.dy);
+
+    // Back contour down
+    p.cubicTo(
+      backX - 0.01 * w,
+      shouldersY + 0.10 * h,
+      backX - 0.01 * w,
+      hipsY - 0.08 * h,
+      backHips.dx,
+      backHips.dy,
+    );
+    p.cubicTo(
+      backHips.dx,
+      hipsY + 0.10 * h,
+      backKnees.dx - 0.01 * w,
+      kneesY - 0.06 * h,
+      backKnees.dx,
+      backKnees.dy,
+    );
+    p.cubicTo(
+      backKnees.dx,
+      kneesY + 0.10 * h,
+      backFeet.dx - 0.01 * w,
+      feetY - 0.06 * h,
+      backFeet.dx,
+      backFeet.dy,
+    );
+
+    // Feet bottom
+    p.lineTo(frontFeet.dx, frontFeet.dy);
+
+    // Front contour up (shin -> belly -> chest -> shoulder)
+    p.cubicTo(
+      frontFeet.dx + 0.01 * w,
+      feetY - 0.06 * h,
+      frontKnees.dx + 0.01 * w,
+      kneesY + 0.10 * h,
+      frontKnees.dx,
+      frontKnees.dy,
+    );
+    p.cubicTo(
+      frontKnees.dx + 0.01 * w,
+      kneesY - 0.04 * h,
+      frontHips.dx + 0.01 * w,
+      hipsY + 0.08 * h,
+      frontHips.dx,
+      frontHips.dy,
+    );
+    p.cubicTo(
+      frontHips.dx + 0.01 * w,
+      hipsY - 0.03 * h,
+      frontWaist.dx + 0.01 * w,
+      waistY + 0.04 * h,
+      frontWaist.dx,
+      frontWaist.dy,
+    );
+    p.cubicTo(
+      frontWaist.dx + 0.01 * w,
+      waistY - 0.06 * h,
+      frontChest.dx + 0.01 * w,
+      chestY + 0.05 * h,
+      frontChest.dx,
+      frontChest.dy,
+    );
+    p.cubicTo(
+      frontChest.dx,
+      chestY - 0.04 * h,
+      frontShoulder.dx,
+      shouldersY + 0.04 * h,
+      frontShoulder.dx,
+      frontShoulder.dy,
+    );
+
+    // Close via neck area
+    p.lineTo(headCX + headR * 0.15, headCY + 0.04 * h);
+    p.lineTo(headCX - headR * 0.50, headCY + 0.02 * h);
+    p.close();
+
+    return p;
+  }
+
+  void _drawDashedLine(Canvas canvas, Offset a, Offset b, Paint paint,
+      {double dash = 10, double gap = 8}) {
+    final dx = b.dx - a.dx;
+    final dy = b.dy - a.dy;
+    final dist = math.sqrt(dx * dx + dy * dy);
+    final steps = (dist / (dash + gap)).floor();
+    final vx = dx / dist;
+    final vy = dy / dist;
+
+    var start = 0.0;
+    for (var i = 0; i < steps; i++) {
+      final p1 = Offset(a.dx + vx * start, a.dy + vy * start);
+      final p2 = Offset(a.dx + vx * (start + dash), a.dy + vy * (start + dash));
+      canvas.drawLine(p1, p2, paint);
+      start += dash + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant ProMeasurementOverlayPainter oldDelegate) {
+    return oldDelegate.mode != mode ||
+        oldDelegate.preset != preset ||
+        oldDelegate.isReady != isReady;
+  }
+}
