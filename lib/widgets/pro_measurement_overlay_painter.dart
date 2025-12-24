@@ -8,9 +8,10 @@ enum BodyPreset { slim, normal, heavy }
 class BodyOverlaySpec {
   // Frame in screen space
   static const double frameWFrac = 0.72;
+  static const double frameTopFrac = 0.10; // Frame starts at 10% from top
   static const double frameHFrac = 0.78;
 
-  // Guide lines in frame space (0..1)
+  // Guide lines in frame space (0..1) - NON-NEGOTIABLE
   static const double shouldersY = 0.23;
   static const double hipsY = 0.52;
   static const double feetY = 0.92;
@@ -20,14 +21,15 @@ class BodyOverlaySpec {
   static const double outlineOpacity = 0.75;
   static const double guideOpacity = 0.65;
 
+  // Width scaling ONLY
   static double presetScale(BodyPreset p) {
     switch (p) {
       case BodyPreset.slim:
-        return 0.90;
+        return 0.85;
       case BodyPreset.normal:
         return 1.00;
       case BodyPreset.heavy:
-        return 1.12;
+        return 1.18;
     }
   }
 }
@@ -48,10 +50,12 @@ class ProMeasurementOverlayPainter extends CustomPainter {
     final sw = size.width;
     final sh = size.height;
 
-    final frameW = sw * BodyOverlaySpec.frameWFrac;
+    // Frame definition (NON-NEGOTIABLE)
+    final frameTop = sh * 0.10;
     final frameH = sh * BodyOverlaySpec.frameHFrac;
+    final frameBottom = frameTop + frameH;
+    final frameW = sw * BodyOverlaySpec.frameWFrac;
     final frameLeft = (sw - frameW) / 2;
-    final frameTop = (sh - frameH) / 2;
     final frameRect = Rect.fromLTWH(frameLeft, frameTop, frameW, frameH);
 
     // Background dim layer
@@ -88,39 +92,39 @@ class ProMeasurementOverlayPainter extends CustomPainter {
 
     canvas.drawPath(cutout, outlinePaint);
 
-    // Guide lines (dashed)
+    // Guide lines (dashed) - Fixed positions (NON-NEGOTIABLE)
     final guidePaint = Paint()
       ..color = Colors.white.withOpacity(BodyOverlaySpec.guideOpacity)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.2;
 
-    final yShoulders = frameTop + BodyOverlaySpec.shouldersY * frameH;
-    final yHips = frameTop + BodyOverlaySpec.hipsY * frameH;
-    final yFeet = frameTop + BodyOverlaySpec.feetY * frameH;
-    final xCenter = frameLeft + BodyOverlaySpec.centerX * frameW;
+    final shouldersY = frameTop + frameH * BodyOverlaySpec.shouldersY;
+    final hipsY = frameTop + frameH * BodyOverlaySpec.hipsY;
+    final feetY = frameTop + frameH * BodyOverlaySpec.feetY;
+    final centerX = frameLeft + frameW * BodyOverlaySpec.centerX;
 
     _drawDashedLine(
       canvas,
-      Offset(frameLeft + 16, yShoulders),
-      Offset(frameLeft + frameW - 16, yShoulders),
+      Offset(frameLeft + 16, shouldersY),
+      Offset(frameLeft + frameW - 16, shouldersY),
       guidePaint,
     );
     _drawDashedLine(
       canvas,
-      Offset(frameLeft + 16, yHips),
-      Offset(frameLeft + frameW - 16, yHips),
+      Offset(frameLeft + 16, hipsY),
+      Offset(frameLeft + frameW - 16, hipsY),
       guidePaint,
     );
     _drawDashedLine(
       canvas,
-      Offset(frameLeft + 16, yFeet),
-      Offset(frameLeft + frameW - 16, yFeet),
+      Offset(frameLeft + 16, feetY),
+      Offset(frameLeft + frameW - 16, feetY),
       guidePaint,
     );
     _drawDashedLine(
       canvas,
-      Offset(xCenter, frameTop + 16),
-      Offset(xCenter, frameTop + frameH - 16),
+      Offset(centerX, frameTop + 16),
+      Offset(centerX, frameBottom - 16),
       guidePaint,
     );
   }
@@ -131,8 +135,9 @@ class ProMeasurementOverlayPainter extends CustomPainter {
     final h = frame.height;
     final cx = frame.center.dx;
 
-    // Width scaling for body types (slim/normal/heavy)
-    final scaleX = BodyOverlaySpec.presetScale(preset);
+    // Width scaling ONLY (NON-NEGOTIABLE)
+    final widthFactor = BodyOverlaySpec.presetScale(preset);
+    final halfWidth = w * 0.25 * widthFactor;
 
     // We intentionally do NOT require face; head is just a neutral oval marker.
     // Head center placed at ~0.12h, shoulders at 0.23h (matches guide line)
@@ -140,10 +145,10 @@ class ProMeasurementOverlayPainter extends CustomPainter {
     final shouldersY = frame.top + BodyOverlaySpec.shouldersY * h;
 
     // Base widths (in frame coords), then scaled
-    final shoulderHalf = 0.22 * w * scaleX; // half width at shoulders
-    final waistHalf = 0.15 * w * scaleX;
-    final hipsHalf = 0.20 * w * scaleX;
-    final ankleHalf = 0.08 * w * scaleX;
+    final shoulderHalf = halfWidth * 1.1; // slightly wider at shoulders
+    final waistHalf = halfWidth * 0.75;
+    final hipsHalf = halfWidth * 0.95;
+    final ankleHalf = halfWidth * 0.40;
 
     // Y landmarks
     final chestY = frame.top + 0.30 * h;

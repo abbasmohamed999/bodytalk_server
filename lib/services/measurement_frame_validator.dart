@@ -44,10 +44,10 @@ class MeasurementFrameValidator {
   static Rect computeFrameRect(Size imageSize) {
     final sw = imageSize.width;
     final sh = imageSize.height;
-    final frameW = sw * BodyOverlaySpec.frameWFrac;
+    final frameTop = sh * 0.10; // Frame starts at 10% from top
     final frameH = sh * BodyOverlaySpec.frameHFrac;
+    final frameW = sw * BodyOverlaySpec.frameWFrac;
     final frameLeft = (sw - frameW) / 2;
-    final frameTop = (sh - frameH) / 2;
     return Rect.fromLTWH(frameLeft, frameTop, frameW, frameH);
   }
 
