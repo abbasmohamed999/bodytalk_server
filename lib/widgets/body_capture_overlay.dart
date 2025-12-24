@@ -1,5 +1,5 @@
 // lib/widgets/body_capture_overlay.dart
-// C2-FINAL: Professional Measurement Frame Overlay
+// Simple guide lines overlay - NO silhouette
 // Privacy-Safe: NO FACE DETECTION, NO FACE REQUIRED
 
 import 'package:flutter/material.dart';
@@ -8,16 +8,14 @@ import 'package:bodytalk_app/main.dart';
 import 'package:bodytalk_app/services/live_pose_validator.dart';
 import 'package:bodytalk_app/widgets/pro_measurement_overlay_painter.dart';
 
-/// Camera overlay widget that guides users to align their body correctly
-/// Shows professional human silhouette cutout window (FRONT and SIDE poses)
-/// Privacy-safe: Only shows shoulders, hips, legs - NO FACE
+/// Camera overlay widget with simple guide lines (no silhouette)
 class BodyCaptureOverlay extends StatelessWidget {
-  final bool isFrontMode; // true = front pose, false = side pose
-  final LiveValidationState validationState; // Live validation state
-  final String? guidanceText; // Real-time guidance message
-  final BodyPreset bodyPreset; // Body shape preset (slim/normal/heavy)
-  final VoidCallback? onClose; // Close button callback
-  final VoidCallback? onCapture; // Capture button callback
+  final bool isFrontMode;
+  final LiveValidationState validationState;
+  final String? guidanceText;
+  final BodyPreset bodyPreset;
+  final VoidCallback? onClose;
+  final VoidCallback? onCapture;
 
   const BodyCaptureOverlay({
     super.key,
@@ -32,11 +30,10 @@ class BodyCaptureOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isReady = validationState == LiveValidationState.okReady;
-    final screenHeight = MediaQuery.of(context).size.height;
 
     return Stack(
       children: [
-        // Professional measurement frame overlay
+        // Guide lines overlay (no silhouette)
         Positioned.fill(
           child: CustomPaint(
             painter: ProMeasurementOverlayPainter(
@@ -47,55 +44,34 @@ class BodyCaptureOverlay extends StatelessWidget {
           ),
         ),
 
-        // Close button (top-left) - above everything
+        // Close button (top-left)
         if (onClose != null)
           Positioned(
-            top: 40,
+            top: 45,
             left: 16,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onClose,
-                customBorder: const CircleBorder(),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-              ),
-            ),
+            child: _buildCloseButton(),
           ),
 
-        // Top info card (blue) - compact, positioned above the frame
+        // Top info card
         Positioned(
-          top: 35,
-          left: 55,
-          right: 55,
+          top: 40,
+          left: 70,
+          right: 70,
           child: _buildInfoCard(context),
         ),
 
-        // Side label buttons (shoulders, hips, feet)
-        _buildSideLabelButtons(context),
-
-        // Bottom message banner - below the silhouette
+        // Bottom message
         Positioned(
-          bottom: screenHeight * 0.12 + 10,
-          left: 20,
-          right: 20,
+          bottom: 100,
+          left: 24,
+          right: 24,
           child: _buildBottomMessage(context, isReady),
         ),
 
-        // Capture button (bottom center)
+        // Capture button
         if (onCapture != null)
           Positioned(
-            bottom: 20,
+            bottom: 25,
             left: 0,
             right: 0,
             child: Center(
@@ -106,9 +82,31 @@ class BodyCaptureOverlay extends StatelessWidget {
     );
   }
 
+  Widget _buildCloseButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onClose,
+        customBorder: const CircleBorder(),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.5),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.close,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF2563EB).withOpacity(0.92),
         borderRadius: BorderRadius.circular(14),
@@ -130,7 +128,7 @@ class BodyCaptureOverlay extends StatelessWidget {
                 ar: isFrontMode ? 'صورة أمامية' : 'استدر 90 درجة'),
             style: GoogleFonts.tajawal(
               color: Colors.white,
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -138,12 +136,12 @@ class BodyCaptureOverlay extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             BodyTalkApp.tr(context,
-                en: 'Face NOT required',
-                fr: 'Visage NON requis',
-                ar: 'الوجه غير مطلوب'),
+                en: 'Align with guide lines',
+                fr: 'Alignez avec les lignes',
+                ar: 'وازن الجسم مع الخطوط'),
             style: GoogleFonts.tajawal(
               color: Colors.white.withOpacity(0.85),
-              fontSize: 11,
+              fontSize: 12,
             ),
             textAlign: TextAlign.center,
           ),
@@ -152,98 +150,16 @@ class BodyCaptureOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildSideLabelButtons(BuildContext context) {
-    // Get screen dimensions for positioning - match BodyOverlaySpec
-    final screenHeight = MediaQuery.of(context).size.height;
-    final frameTop = screenHeight * BodyOverlaySpec.frameTopFrac;
-    final frameHeight = screenHeight * BodyOverlaySpec.frameHFrac;
-
-    // Calculate Y positions based on BodyOverlaySpec (updated values)
-    final shouldersY = frameTop + frameHeight * BodyOverlaySpec.shouldersY;
-    final hipsY = frameTop + frameHeight * BodyOverlaySpec.hipsY;
-    final feetY = frameTop + frameHeight * BodyOverlaySpec.feetY;
-
-    return Stack(
-      children: [
-        // Shoulders label (left)
-        _buildLabel(
-          context,
-          top: shouldersY - 16,
-          left: 8,
-          text: BodyTalkApp.tr(context,
-              en: 'Shoulders', fr: 'Épaules', ar: 'كتفين'),
-        ),
-        // Hips label (left)
-        _buildLabel(
-          context,
-          top: hipsY - 16,
-          left: 8,
-          text: BodyTalkApp.tr(context, en: 'Hips', fr: 'Hanches', ar: 'وركين'),
-        ),
-        // Feet label (left)
-        _buildLabel(
-          context,
-          top: feetY - 16,
-          left: 8,
-          text: BodyTalkApp.tr(context, en: 'Feet', fr: 'Pieds', ar: 'قدمين'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLabel(BuildContext context,
-      {required double top,
-      double? left,
-      double? right,
-      required String text}) {
-    return Positioned(
-      top: top,
-      left: left,
-      right: right,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.55),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.35),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              text,
-              style: GoogleFonts.tajawal(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 3),
-            Icon(
-              Icons.arrow_forward,
-              color: Colors.white.withOpacity(0.7),
-              size: 12,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildBottomMessage(BuildContext context, bool isReady) {
-    // Only show message when there's something to show
     if (!isReady && (guidanceText == null || guidanceText!.isEmpty)) {
       return const SizedBox.shrink();
     }
 
     final message = isReady
         ? BodyTalkApp.tr(context,
-            en: 'Hold still - Capturing...',
-            fr: 'Ne bougez pas - Capture...',
-            ar: 'ابق ثابتاً - جاري الالتقاط...')
+            en: 'Ready! Tap to capture',
+            fr: 'Prêt! Appuyez pour capturer',
+            ar: 'جاهز! اضغط للالتقاط')
         : guidanceText!;
 
     final bgColor = isReady
@@ -251,10 +167,10 @@ class BodyCaptureOverlay extends StatelessWidget {
         : Colors.orange.withOpacity(0.85);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.25),
@@ -270,19 +186,19 @@ class BodyCaptureOverlay extends StatelessWidget {
           Icon(
             isReady ? Icons.check_circle : Icons.info_outline,
             color: Colors.white,
-            size: 18,
+            size: 20,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Flexible(
             child: Text(
               message,
               style: GoogleFonts.tajawal(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -302,7 +218,7 @@ class BodyCaptureOverlay extends StatelessWidget {
           height: 70,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.black.withOpacity(0.45),
+            color: Colors.black.withOpacity(0.4),
             border: Border.all(
               color: isReady
                   ? const Color(0xFF39D98A)
@@ -313,7 +229,7 @@ class BodyCaptureOverlay extends StatelessWidget {
           child: Center(
             child: Icon(
               Icons.camera_alt,
-              color: isReady ? Colors.white : Colors.white.withOpacity(0.35),
+              color: isReady ? Colors.white : Colors.white.withOpacity(0.4),
               size: 32,
             ),
           ),
