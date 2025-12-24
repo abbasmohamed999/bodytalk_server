@@ -308,11 +308,11 @@ class ProMeasurementOverlayPainter extends CustomPainter {
     final backX = frame.left + 0.46 * w;
     final frontXBase = frame.left + 0.60 * w;
 
-    final chestY = frame.top + 0.30 * h;
-    final waistY = frame.top + 0.44 * h;
-    final hipsY = frame.top + BodyOverlaySpec.hipsY * h;
-    final kneesY = frame.top + 0.73 * h;
-    final feetY = frame.top + BodyOverlaySpec.feetY * h;
+    final sideChestY = frame.top + 0.30 * h;
+    final sideWaistY = frame.top + 0.44 * h;
+    final sideHipsY = frame.top + BodyOverlaySpec.hipsY * h;
+    final sideKneesY = frame.top + 0.73 * h;
+    final sideFeetY = frame.top + BodyOverlaySpec.feetY * h;
 
     // Belly/hip projection increases with preset
     final belly = (preset == BodyPreset.heavy)
@@ -321,16 +321,16 @@ class ProMeasurementOverlayPainter extends CustomPainter {
     final chest = (preset == BodyPreset.heavy) ? 0.06 * w : 0.045 * w;
 
     final frontShoulder = Offset(frontXBase + chest, shouldersY);
-    final frontChest = Offset(frontXBase + chest, chestY);
-    final frontWaist = Offset(frontXBase + belly, waistY);
-    final frontHips = Offset(frontXBase + belly, hipsY);
-    final frontKnees = Offset(frontXBase + 0.02 * w, kneesY);
-    final frontFeet = Offset(frontXBase + 0.02 * w, feetY);
+    final frontChest = Offset(frontXBase + chest, sideChestY);
+    final frontWaist = Offset(frontXBase + belly, sideWaistY);
+    final frontHips = Offset(frontXBase + belly, sideHipsY);
+    final frontKnees = Offset(frontXBase + 0.02 * w, sideKneesY);
+    final frontFeet = Offset(frontXBase + 0.02 * w, sideFeetY);
 
     final backShoulder = Offset(backX, shouldersY);
-    final backHips = Offset(backX, hipsY);
-    final backKnees = Offset(backX + 0.01 * w, kneesY);
-    final backFeet = Offset(backX + 0.01 * w, feetY);
+    final backHips = Offset(backX, sideHipsY);
+    final backKnees = Offset(backX + 0.01 * w, sideKneesY);
+    final backFeet = Offset(backX + 0.01 * w, sideFeetY);
 
     // Start at back shoulder
     p.moveTo(backShoulder.dx, backShoulder.dy);
@@ -340,23 +340,23 @@ class ProMeasurementOverlayPainter extends CustomPainter {
       backX - 0.01 * w,
       shouldersY + 0.10 * h,
       backX - 0.01 * w,
-      hipsY - 0.08 * h,
+      sideHipsY - 0.08 * h,
       backHips.dx,
       backHips.dy,
     );
     p.cubicTo(
       backHips.dx,
-      hipsY + 0.10 * h,
+      sideHipsY + 0.10 * h,
       backKnees.dx - 0.01 * w,
-      kneesY - 0.06 * h,
+      sideKneesY - 0.06 * h,
       backKnees.dx,
       backKnees.dy,
     );
     p.cubicTo(
       backKnees.dx,
-      kneesY + 0.10 * h,
+      sideKneesY + 0.10 * h,
       backFeet.dx - 0.01 * w,
-      feetY - 0.06 * h,
+      sideFeetY - 0.06 * h,
       backFeet.dx,
       backFeet.dy,
     );
@@ -367,39 +367,39 @@ class ProMeasurementOverlayPainter extends CustomPainter {
     // Front contour up (shin -> belly -> chest -> shoulder)
     p.cubicTo(
       frontFeet.dx + 0.01 * w,
-      feetY - 0.06 * h,
+      sideFeetY - 0.06 * h,
       frontKnees.dx + 0.01 * w,
-      kneesY + 0.10 * h,
+      sideKneesY + 0.10 * h,
       frontKnees.dx,
       frontKnees.dy,
     );
     p.cubicTo(
       frontKnees.dx + 0.01 * w,
-      kneesY - 0.04 * h,
+      sideKneesY - 0.04 * h,
       frontHips.dx + 0.01 * w,
-      hipsY + 0.08 * h,
+      sideHipsY + 0.08 * h,
       frontHips.dx,
       frontHips.dy,
     );
     p.cubicTo(
       frontHips.dx + 0.01 * w,
-      hipsY - 0.03 * h,
+      sideHipsY - 0.03 * h,
       frontWaist.dx + 0.01 * w,
-      waistY + 0.04 * h,
+      sideWaistY + 0.04 * h,
       frontWaist.dx,
       frontWaist.dy,
     );
     p.cubicTo(
       frontWaist.dx + 0.01 * w,
-      waistY - 0.06 * h,
+      sideWaistY - 0.06 * h,
       frontChest.dx + 0.01 * w,
-      chestY + 0.05 * h,
+      sideChestY + 0.05 * h,
       frontChest.dx,
       frontChest.dy,
     );
     p.cubicTo(
       frontChest.dx,
-      chestY - 0.04 * h,
+      sideChestY - 0.04 * h,
       frontShoulder.dx,
       shouldersY + 0.04 * h,
       frontShoulder.dx,
